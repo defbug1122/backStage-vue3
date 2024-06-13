@@ -19,5 +19,14 @@ namespace backStage_vue3
             RouteConfig.RegisterRoutes(RouteTable.Routes);
             BundleConfig.RegisterBundles(BundleTable.Bundles);
         }
+        protected void Application_PostAuthorizeRequest()
+        {
+            HttpContext.Current.SetSessionStateBehavior(System.Web.SessionState.SessionStateBehavior.Required);
+        }
+        protected void Session_start()
+        {
+            Session["user"] = User.Identity.Name;
+            Session["count"] = 0;
+        }
     }
 }

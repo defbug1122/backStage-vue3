@@ -1,22 +1,24 @@
 <template>
-  <h1>我是首頁</h1>
-  <nav>
-    <router-link to="/login">Go to Login</router-link>
-  </nav>
+  <div class="home-container">
+    <Menu></Menu>
+    <h1>首頁</h1>
+  </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-
-defineProps({
-  msg: String,
+import {ref, onMounted} from 'vue'
+import Menu from '../components/Menu.vue'
+const menuList = ref([]);
+onMounted(async () => {
 })
 
-const count = ref(0)
 </script>
 
 <style scoped>
 .read-the-docs {
   color: #888;
+}
+.home-container {
+  display: flex;
 }
 </style>

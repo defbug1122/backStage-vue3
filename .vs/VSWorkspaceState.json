@@ -1,8 +1,9 @@
 {
   "ExpandedNodes": [
     "",
-    "\\backStage-vue3"
+    "\\backStage-vue3",
+    "\\backStage-vue3\\ClientApp"
   ],
-  "SelectedNode": "\\backStage-vue3",
+  "SelectedNode": "\\backStage-vue3.sln",
   "PreviewInSolutionExplorer": false
 }

@@ -1,12 +1,22 @@
+<template>
+  <div>
+    <RouterView />
+  </div>
+</template>
+
 <script setup>
-import Home from './components/Home.vue'
-import Login from './components/Login.vue'
+import {ref, onMounted} from 'vue'
+import { RouterView,useRoute, useRouter } from 'vue-router';
+const router = useRouter();
+
+onMounted(() => {
+  const token = sessionStorage.getItem('token')
+  if (!token) {
+    router.push('/login')
+  }
+})
 
 </script>
-
-<template>
-  <router-view></router-view>
-</template>
 
 <style scoped>
 .logo {
