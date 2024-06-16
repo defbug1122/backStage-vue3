@@ -31,9 +31,10 @@
     if (role && token) {
       userRole.value = role
     }
-    // 设置菜单列表
+    // 菜單列表
     menuLoginList.value = [
       {
+        // 權限-超級管理員
         role: "1",
         items: [
           { name: "帳號系統", path: "/account" },
@@ -43,9 +44,18 @@
         ]
       },
       {
+        // 權限-管理員
         role: "2",
         items: [
           { name: "會員系統", path: "/member" },
+          { name: "商品系統", path: "/product" },
+          { name: "訂單系統", path: "/order" },
+        ]
+      },
+      {
+        // 權限-普通用戶
+        role: "3",
+        items: [
           { name: "商品系統", path: "/product" },
           { name: "訂單系統", path: "/order" },
         ]

@@ -5,13 +5,11 @@ using System.Web;
 
 namespace backStage_vue3.Models
 {
-    public class UserModel
+    public class UserUpdateModel
     {
-        public int Id { get; set; }
+        public string CurrentUserName { get; set; }
         public string UserName { get; set; }
         public string Password { get; set; }
-        public DateTime? LoginTime { get; set; }
-        public DateTime? CreateTime { get; set; }
         public string Permission { get; set; }
     }
 }

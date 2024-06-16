@@ -67,7 +67,6 @@ namespace backStage_vue3.Controllers
                     Password = row["f_password"].ToString(),
                     CreateTime = row["f_createTime"] != DBNull.Value ? Convert.ToDateTime(row["f_createTime"]) : DateTime.MinValue,
                     LoginTime = row["f_loginTime"] != DBNull.Value ? Convert.ToDateTime(row["f_loginTime"]) : DateTime.MinValue,
-                    LoginStatus = row["f_loginStatus"] != DBNull.Value ? Convert.ToBoolean(row["f_loginStatus"]) : false,
                     Permission = row["f_Permission"].ToString(),
                 };
                 users.Add(user);
@@ -82,8 +81,27 @@ namespace backStage_vue3.Controllers
         [ResponseType(typeof(IEnumerable<UserModel>))]
         public async Task<IHttpActionResult> GetUsers(string searchTerm = "", int pageNumber = 1, int pageSize = 10)
         {
+            string sessionID = HttpContext.Current.Session.SessionID;
+            string currentUserName = HttpContext.Current.Session["currentUser"] as string;
+
+            SqlConnection connection = null;
+
             try
             {
+                connection = new SqlConnection(conStr);
+                connection.Open();
+                using (SqlCommand checkCommand = new SqlCommand("pro_bs_getUuidByUserName", connection))
+                {
+                    checkCommand.CommandType = CommandType.StoredProcedure;
+                    checkCommand.Parameters.AddWithValue("@UserName", currentUserName);
+
+                    var result = await checkCommand.ExecuteScalarAsync();
+                    if (result == null || result.ToString() != sessionID)
+                    {
+                        return StatusCode(HttpStatusCode.Unauthorized);
+                    }
+                }
+
                 var users = ConnectToDatabase();
 
                 // 进行模糊搜索
@@ -95,24 +113,38 @@ namespace backStage_vue3.Controllers
                 // 排序
                 users = users.OrderByDescending(u => u.CreateTime).ToList();
 
-                // 分页
+                // 計算總數據量
+                int totalRecords = users.Count();
+
+                // 分頁
                 users = users.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
+
 
                 var lowercaseUsers = users.Select(u => new
                 {
                     id = u.Id,
                     userName = u.UserName.ToLower(),
                     password = u.Password.ToLower(),
-                    loginTime = u.LoginTime,
-                    createTime = u.CreateTime,
-                    loginStatus = u.LoginStatus,
+                    loginTime = u.LoginTime?.ToString("yyyy-MM-dd"),
+                    createTime = u.CreateTime?.ToString("yyyy-MM-dd"),
                     permission = u.Permission
                 });
-                return Ok(new { code = 0, message = "請求成功", data = lowercaseUsers });
+
+                // 判斷是否還有更多數據
+                bool hasMore = (pageNumber * pageSize) < totalRecords;
+
+                return Ok(new { code = 0, message = "請求成功", data = lowercaseUsers, hasMore = hasMore });
             }
             catch (Exception ex)
             {
                 return InternalServerError(ex);
+            }
+            finally
+            {
+                if (connection != null && connection.State == ConnectionState.Open)
+                {
+                    connection.Close();
+                }
             }
         }
 
@@ -122,57 +154,64 @@ namespace backStage_vue3.Controllers
         public async Task<IHttpActionResult> Login(UserLoginModel model)
 
         {
+            SqlConnection connection = null;
             try
             {
-                using (SqlConnection connection = new SqlConnection(conStr))
+                connection = new SqlConnection(conStr);
+                connection.Open();
+
+                using (SqlCommand command = new SqlCommand("pro_bs_getUserLogin", connection))
                 {
-                    connection.Open();
-                    using (SqlCommand command = new SqlCommand("pro_bs_getUserLogin", connection))
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.AddWithValue("@UserName", model.UserName);
+                    command.Parameters.AddWithValue("@Password", model.Password);
+
+                    using (SqlDataAdapter adapter = new SqlDataAdapter(command))
                     {
-                        command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.AddWithValue("@UserName", model.UserName);
-                        command.Parameters.AddWithValue("@Password", model.Password);
+                        DataTable dataTable = new DataTable();
+                        adapter.Fill(dataTable);
 
-                        using (SqlDataAdapter adapter = new SqlDataAdapter(command))
+                        var response = HttpContext.Current.Response;
+                        if (dataTable.Rows.Count > 0)
                         {
-                            DataTable dataTable = new DataTable();
-                            adapter.Fill(dataTable);
-                            //var token = GenerateToken(model.UserName);
-
-                            var response = HttpContext.Current.Response;
-                            if (dataTable.Rows.Count > 0)
+                            string userId = Convert.ToString(dataTable.Rows[0]["f_id"]);
+                            string permission = Convert.ToString(dataTable.Rows[0]["f_permission"]);
+                            DateTime? previousLoginTime = dataTable.Rows[0]["f_loginTime"] != DBNull.Value ? (DateTime?)Convert.ToDateTime(dataTable.Rows[0]["f_loginTime"]) : null;
+                            // 更新新的登入狀態、時間和 UUID
+                            using (SqlCommand updateCommand = new SqlCommand("UPDATE t_member SET f_loginTime = @LoginTime, f_uuid = @UUID WHERE f_id = @UserId", connection))
                             {
-                                string userId = Convert.ToString(dataTable.Rows[0]["f_id"]);
-                                string permission = Convert.ToString(dataTable.Rows[0]["f_permission"]);
-                                bool isAlreadyLoggedIn = dataTable.Rows[0]["f_loginStatus"] != DBNull.Value && Convert.ToBoolean(dataTable.Rows[0]["f_loginStatus"]);
-                                DateTime? previousLoginTime = dataTable.Rows[0]["f_loginTime"] != DBNull.Value ? (DateTime?)Convert.ToDateTime(dataTable.Rows[0]["f_loginTime"]) : null;
-                                // 更新新的登入狀態和時間
-                                using (SqlCommand updateCommand = new SqlCommand("UPDATE t_member SET f_loginStatus = 1, f_loginTime = @LoginTime WHERE f_id = @UserId", connection))
-                                {
-                                    updateCommand.Parameters.AddWithValue("@UserId", userId);
-                                    updateCommand.Parameters.AddWithValue("@LoginTime", DateTime.Now);
-                                    updateCommand.ExecuteNonQuery();
-                                }
-                                HttpCookie cookie1 = new HttpCookie("uuid");
-                                HttpCookie cookie2 = new HttpCookie("permission");
-                                cookie1.Value = HttpContext.Current.Session.SessionID;
-                                cookie2.Value = permission;
-                                response.Cookies.Add(cookie1);
-                                response.Cookies.Add(cookie2);
-                                return Ok(new { code = 0,message = "登入成功" });
+                                updateCommand.Parameters.AddWithValue("@UserId", userId);
+                                updateCommand.Parameters.AddWithValue("@LoginTime", DateTime.Now);
+                                updateCommand.Parameters.AddWithValue("@UUID", HttpContext.Current.Session.SessionID);
+                                updateCommand.ExecuteNonQuery();
                             }
-                            else
-                            {
-                                return Ok(new { code = 1, message = "無效的帳號或密碼，請重新登入" });
-                            }
+                            HttpContext.Current.Session["currentUser"] = model.UserName;
+                            HttpCookie cookie1 = new HttpCookie("uuid");
+                            HttpCookie cookie2 = new HttpCookie("permission");
+                            cookie1.Value = HttpContext.Current.Session.SessionID;
+                            cookie2.Value = permission;
+                            response.Cookies.Add(cookie1);
+                            response.Cookies.Add(cookie2);
+                            return Ok(new { code = 0, message = "登入成功" });
+                        }
+                        else
+                        {
+                            return Ok(new { code = 1, message = "無效的帳號或密碼，請重新登入" });
                         }
                     }
                 }
-                
+
             }
             catch (Exception ex)
             {
                 return InternalServerError(ex);
+            }
+            finally
+            {
+                if (connection != null && connection.State == ConnectionState.Open)
+                {
+                    connection.Close();
+                }
             }
         }
 
@@ -186,56 +225,55 @@ namespace backStage_vue3.Controllers
                 return BadRequest(ModelState);
             }
 
+            string sessionID = HttpContext.Current.Session.SessionID;
+            string currentUserName = HttpContext.Current.Session["currentUser"] as string;
+
+            SqlConnection connection = null;
+
             try
             {
-                using (SqlConnection connection = new SqlConnection(conStr))
+                connection = new SqlConnection(conStr);
+                connection.Open();
+
+                // 驗證 sessionID 是否與資料庫中的 f_uuid 匹配
+                using (SqlCommand checkCommand = new SqlCommand("pro_bs_getUuidByUserName", connection))
                 {
-                    //await connection.OpenAsync();
-                    //using (SqlCommand command = new SqlCommand("SELECT f_loginStatus FROM t_member WHERE f_userName = @UserName", connection))
-                    //{
-                    //    command.Parameters.AddWithValue("@UserName", model.UserName);
+                    checkCommand.CommandType = CommandType.StoredProcedure;
+                    checkCommand.Parameters.AddWithValue("@UserName", currentUserName);
 
-                    //    var loginStatus = (bool?)await command.ExecuteScalarAsync();
-                    //    if (loginStatus == true)
-                    //    {
-                    //        // 如果已經有同樣的帳號登入，則踢出前者
-                    //        using (SqlCommand updateCommand = new SqlCommand("UPDATE t_member SET f_loginStatus = 0 WHERE f_userName = @UserName AND f_loginStatus = 1", connection))
-                    //        {
-                    //            updateCommand.Parameters.AddWithValue("@UserName", model.UserName);
-                    //            await updateCommand.ExecuteNonQueryAsync();
-                    //        }
-
-                    //        return StatusCode(HttpStatusCode.Unauthorized); // 401 狀態碼
-                    //    }
-                    //}
-
-                    // 繼續新增用戶
-                    using (SqlCommand command = new SqlCommand("pro_bs_addNewUser", connection))
+                    var result = await checkCommand.ExecuteScalarAsync();
+                    if (result == null || result.ToString() != sessionID)
                     {
-                        command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.AddWithValue("@UserName", model.UserName);
-                        command.Parameters.AddWithValue("@Password", model.Password);
-                        command.Parameters.AddWithValue("@CreateTime", DateTime.Now);
-                        command.Parameters.AddWithValue("@Permission", model.Permission);
+                        return StatusCode(HttpStatusCode.Unauthorized);
+                    }
+                }
 
-                        using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                // 繼續新增用戶
+                using (SqlCommand command = new SqlCommand("pro_bs_addNewUser", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.AddWithValue("@UserName", model.UserName);
+                    command.Parameters.AddWithValue("@Password", model.Password);
+                    command.Parameters.AddWithValue("@CreateTime", DateTime.Now);
+                    command.Parameters.AddWithValue("@Permission", model.Permission);
+
+                    using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                    {
+                        if (reader.Read())
                         {
-                            if (reader.Read())
+                            string message = reader.GetString(0);
+                            if (message == "User created successfully")
                             {
-                                string message = reader.GetString(0);
-                                if (message == "User created successfully")
-                                {
-                                    return Ok(new { code = 0, message = "創建成功" });
-                                }
-                                else
-                                {
-                                    return Ok(new { code = 1, message = "用戶已存在" });
-                                }
+                                return Ok(new { code = 0, message = "創建成功" });
                             }
                             else
                             {
-                                return InternalServerError(new Exception("No message returned from stored procedure."));
+                                return Ok(new { code = 1, message = "用戶已存在" });
                             }
+                        }
+                        else
+                        {
+                            return InternalServerError(new Exception("No message returned from stored procedure."));
                         }
                     }
                 }
@@ -243,6 +281,176 @@ namespace backStage_vue3.Controllers
             catch (Exception ex)
             {
                 return InternalServerError(ex);
+            }
+            finally
+            {
+                if (connection != null && connection.State == ConnectionState.Open)
+                {
+                    connection.Close();
+                }
+            }
+        }
+
+        // HTTP POST 刪除用戶 API
+        [HttpPost, Route("api/user/delete")]
+        [AllowAnonymous]
+        public async Task<IHttpActionResult> DeleteUser(UserDeleteModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            string sessionID = HttpContext.Current.Session.SessionID;
+            string currentUserName = HttpContext.Current.Session["currentUser"] as string;
+
+            SqlConnection connection = null;
+
+            try
+            {
+
+                connection = new SqlConnection(conStr);
+                connection.Open();
+                // 驗證 sessionID 是否與資料庫中的 f_uuid 匹配
+                using (SqlCommand checkCommand = new SqlCommand("pro_bs_getUuidByUserName", connection))
+                {
+                    checkCommand.CommandType = CommandType.StoredProcedure;
+                    checkCommand.Parameters.AddWithValue("@UserName", currentUserName);
+
+                    var result = await checkCommand.ExecuteScalarAsync();
+                    if (result == null || result.ToString() != sessionID)
+                    {
+                        return StatusCode(HttpStatusCode.Unauthorized);
+                    }
+                }
+
+                // 刪除用戶
+                using (SqlCommand command = new SqlCommand("pro_bs_deleteUser", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.AddWithValue("@UserName", model.UserName);
+                    command.Parameters.AddWithValue("@CurrentUserName", currentUserName);
+
+                    using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                    {
+                        if (reader.Read())
+                        {
+                            string message = reader.GetString(0);
+                            if (message == "User deleted successfully")
+                            {
+                                return Ok(new { code = 0, message = "刪除成功" });
+                            }
+                            else if (message == "Cannot delete yourself")
+                            {
+                                return Ok(new { code = 1, message = "不能刪除自己" });
+                            }
+                            else
+                            {
+                                return Ok(new { code = 2, message = "用戶不存在" });
+                            }
+                        }
+                        else
+                        {
+                            return InternalServerError(new Exception("No message returned from stored procedure."));
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return InternalServerError(ex);
+            }
+
+            finally
+            {
+                if (connection != null && connection.State == ConnectionState.Open)
+                {
+                    connection.Close();
+                }
+            }
+        }
+
+        // HTTP POST 更新用戶 API
+        [HttpPost, Route("api/user/update")]
+        [AllowAnonymous]
+        public async Task<IHttpActionResult> EditUser(UserUpdateModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            string sessionID = HttpContext.Current.Session.SessionID;
+            string currentUserName = HttpContext.Current.Session["currentUser"] as string;
+
+            SqlConnection connection = null;
+
+            try
+            {
+                connection = new SqlConnection(conStr);
+                connection.Open();
+
+                // 驗證 sessionID 是否與資料庫中的 f_uuid 匹配
+                using (SqlCommand checkCommand = new SqlCommand("pro_bs_getUuidByUserName", connection))
+                {
+                    checkCommand.CommandType = CommandType.StoredProcedure;
+                    checkCommand.Parameters.AddWithValue("@UserName", currentUserName);
+
+                    var result = await checkCommand.ExecuteScalarAsync();
+                    if (result == null || result.ToString() != sessionID)
+                    {
+                        return StatusCode(HttpStatusCode.Unauthorized);
+                    }
+                }
+
+                // 更新用戶
+                using (SqlCommand command = new SqlCommand("pro_bs_editUser", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.AddWithValue("@UserName", model.UserName);
+                    command.Parameters.AddWithValue("@NewPassword", model.Password);
+                    command.Parameters.AddWithValue("@NewPermission", model.Permission);
+                    command.Parameters.AddWithValue("@CurrentUserName", currentUserName);
+
+                    using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                    {
+                        if (reader.Read())
+                        {
+                            string message = reader.GetString(0);
+                            if (message == "User updated successfully")
+                            {
+                                return Ok(new { code = 0, message = "更新成功" });
+                            }
+                            else if (message == "Cannot edit your own account")
+                            {
+                                return Ok(new { code = 1, message = "不能修改自己的帳號" });
+                            }
+                            else if (message == "User not found")
+                            {
+                                return Ok(new { code = 2, message = "用戶不存在" });
+                            }
+                            else
+                            {
+                                return Ok(new { code = 3, message = "未知錯誤" });
+                            }
+                        }
+                        else
+                        {
+                            return InternalServerError(new Exception("No message returned from stored procedure."));
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return InternalServerError(ex);
+            }
+            finally
+            {
+                if (connection != null && connection.State == ConnectionState.Open)
+                {
+                    connection.Close();
+                }
             }
         }
 

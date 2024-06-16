@@ -23,9 +23,13 @@ axios.interceptors.response.use(
         if (error.response.status === 401) {
             sessionStorage.removeItem("token");
             sessionStorage.removeItem("role");
+            alert('重新登入')
             router.push('/login');
             console.log('重新登入')
-        } else {
+        } else if (error.response.status === 500) {
+            alert('目前維修中，請聯繫系統管理員')
+        }        
+        else {
             console.log('操作失敗')
     }
 });
