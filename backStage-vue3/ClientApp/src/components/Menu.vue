@@ -1,73 +1,65 @@
 <template>
-    <div v-for="(menuItem, index) in menuLoginList" :key="index" class="menu-container">
-      <div v-if="userRole === menuItem.role">
-        <div class="menu-item">
-          <span class="menu-link cursor-pointer">
-            <div v-for="(item, i) in menuItem.items" :key="i">
-              <router-link :to="item.path">{{ item.name }}</router-link>
-            </div>
-          </span>
-        </div>
-      </div>
-    </div>
-  </template>
-  
-  <script setup>
-  import { ref, onMounted } from 'vue'
-  
-  const userRole = ref('')
-  const menuLoginList = ref([
-    {
-      role: "",
-      items: [
-        { name: "", path: "" }
-      ]
-    }
-  ])
-  
-  onMounted(() => {
-    const token = sessionStorage.getItem('token')
-    const role = sessionStorage.getItem('role')
-    if (role && token) {
-      userRole.value = role
-    }
-    // 菜單列表
-    menuLoginList.value = [
-      {
-        // 權限-超級管理員
-        role: "1",
-        items: [
-          { name: "帳號系統", path: "/account" },
-          { name: "會員系統", path: "/member" },
-          { name: "商品系統", path: "/product" },
-          { name: "訂單系統", path: "/order" },
-        ]
-      },
-      {
-        // 權限-管理員
-        role: "2",
-        items: [
-          { name: "會員系統", path: "/member" },
-          { name: "商品系統", path: "/product" },
-          { name: "訂單系統", path: "/order" },
-        ]
-      },
-      {
-        // 權限-普通用戶
-        role: "3",
-        items: [
-          { name: "商品系統", path: "/product" },
-          { name: "訂單系統", path: "/order" },
-        ]
-      },
+  <n-menu :options="menuOptions" v-model:value="currentRoute" @update:value="handleMenuClick" />
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { NMenu } from 'naive-ui'
+
+const router = useRouter()
+const route = useRoute()
+
+const userRole = ref('')
+const currentRoute = ref(route.path)
+const menuLoginList = ref([
+  {
+    role: "1",
+    items: [
+      { name: "帳號系統", path: "/account", key: '1' },
+      { name: "會員系統", path: "/member", key: '2' },
+      { name: "商品系統", path: "/product", key: '3' },
+      { name: "訂單系統", path: "/order", key: '4' },
     ]
-  })
-  </script>
-  
-  
-  <style scoped>
-  .menu-container {
-    width: 150px;
+  },
+  {
+    role: "2",
+    items: [
+      { name: "會員系統", path: "/member" },
+      { name: "商品系統", path: "/product" },
+      { name: "訂單系統", path: "/order" },
+    ]
+  },
+  {
+    role: "3",
+    items: [
+      { name: "商品系統", path: "/product" },
+      { name: "訂單系統", path: "/order" },
+    ]
+  },
+])
+
+const menuOptions = ref([])
+
+onMounted(() => {
+  const token = sessionStorage.getItem('token')
+  const role = sessionStorage.getItem('role')
+  if (role && token) {
+    userRole.value = role
+    const menu = menuLoginList.value.find(menu => menu.role === role)
+    if (menu) {
+      menuOptions.value = menu.items.map(item => ({
+        label: item.name,
+        key: item.path,
+      }))
+    }
   }
-  </style>
-  
+})
+
+const handleMenuClick = (key) => {
+  router.push(key)
+}
+</script>
+
+<style scoped>
+</style>

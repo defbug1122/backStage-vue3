@@ -1,13 +1,18 @@
 <template>
-    <div class="member-container">
-      <Menu></Menu>
-      <h1>會員系統</h1>
+    <div>
+      <n-layout has-sider class="member-container">
+        <n-layout-sider style="width: 20vw; background-color: #f0f2f5;">
+          <Menu />
+        </n-layout-sider>
+        <n-layout-content style="padding: 16px; width: 80vw; height: 100vh;">會員系統</n-layout-content>
+      </n-layout>
     </div>
   </template>
   
   <script setup>
   import {ref, onMounted} from 'vue'
   import Menu from '../components/Menu.vue'
+  import { NTable, NInput, NInputGroup, NButton, NLayout, NLayoutSider, NLayoutContent, NSelect } from 'naive-ui'
   const menuList = ref([]);
   onMounted(async () => {
   })
@@ -20,5 +25,6 @@
   }
   .member-container {
     display: flex;
+    width: 100vw;
   }
   </style>

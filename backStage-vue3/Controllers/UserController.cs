@@ -21,8 +21,6 @@ using System.Web;
 namespace backStage_vue3.Controllers
 {
     public class UserController : ApiController
-
-
     {
         string conStr;
         public UserController()
@@ -37,9 +35,7 @@ namespace backStage_vue3.Controllers
             using (SqlConnection connection = new SqlConnection(conStr))
             {
                 connection.Open();
-                string query = "SELECT * FROM t_member";
-
-                using (SqlCommand command = new SqlCommand(query, connection))
+                using (SqlCommand command = new SqlCommand("pro_bs_getAllAccounts", connection))
                 {
                     using (SqlDataAdapter adapter = new SqlDataAdapter(command))
                     {
@@ -104,16 +100,16 @@ namespace backStage_vue3.Controllers
 
                 var users = ConnectToDatabase();
 
-                // 进行模糊搜索
+                // 模糊搜索
                 if (!string.IsNullOrEmpty(searchTerm))
                 {
                     users = users.Where(u => u.UserName.ToLower().Contains(searchTerm.ToLower())).ToList();
                 }
 
-                // 排序
+                // 排序-帳號創立日期
                 users = users.OrderByDescending(u => u.CreateTime).ToList();
 
-                // 計算總數據量
+                // 計算資料總數
                 int totalRecords = users.Count();
 
                 // 分頁
@@ -130,7 +126,7 @@ namespace backStage_vue3.Controllers
                     permission = u.Permission
                 });
 
-                // 判斷是否還有更多數據
+                // 判斷是否還有更多資料
                 bool hasMore = (pageNumber * pageSize) < totalRecords;
 
                 return Ok(new { code = 0, message = "請求成功", data = lowercaseUsers, hasMore = hasMore });
@@ -154,6 +150,14 @@ namespace backStage_vue3.Controllers
         public async Task<IHttpActionResult> Login(UserLoginModel model)
 
         {
+            string pattern = @"^[a-zA-Z0-9_-]{4,16}$";
+            if (
+                !System.Text.RegularExpressions.Regex.IsMatch(model.UserName, pattern) ||
+                !System.Text.RegularExpressions.Regex.IsMatch(model.Password, pattern))
+            {
+                return Ok(new { code = 1, message = "帳號或密碼格式錯誤，必須是4-16個字符，只能包含字母、數字、下劃線和連字符" });
+            }
+
             SqlConnection connection = null;
             try
             {
@@ -177,9 +181,10 @@ namespace backStage_vue3.Controllers
                             string userId = Convert.ToString(dataTable.Rows[0]["f_id"]);
                             string permission = Convert.ToString(dataTable.Rows[0]["f_permission"]);
                             DateTime? previousLoginTime = dataTable.Rows[0]["f_loginTime"] != DBNull.Value ? (DateTime?)Convert.ToDateTime(dataTable.Rows[0]["f_loginTime"]) : null;
-                            // 更新新的登入狀態、時間和 UUID
-                            using (SqlCommand updateCommand = new SqlCommand("UPDATE t_member SET f_loginTime = @LoginTime, f_uuid = @UUID WHERE f_id = @UserId", connection))
+                            // 更新新的登入狀態、登入時間和 UUID
+                            using (SqlCommand updateCommand = new SqlCommand("pro_bs_updateAccountLoginInfo", connection))
                             {
+                                updateCommand.CommandType = CommandType.StoredProcedure;
                                 updateCommand.Parameters.AddWithValue("@UserId", userId);
                                 updateCommand.Parameters.AddWithValue("@LoginTime", DateTime.Now);
                                 updateCommand.Parameters.AddWithValue("@UUID", HttpContext.Current.Session.SessionID);
@@ -223,6 +228,20 @@ namespace backStage_vue3.Controllers
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
+            }
+
+            string pattern = @"^[a-zA-Z0-9_-]{4,16}$";
+            if (
+                !System.Text.RegularExpressions.Regex.IsMatch(model.UserName, pattern) ||
+                !System.Text.RegularExpressions.Regex.IsMatch(model.Password, pattern))
+            {
+                return Ok(new { code = 1, message = "帳號或密碼格式錯誤，必須是4-16個字符，只能包含字母、數字、下劃線和連字符222" });
+            }
+
+            if (
+                String.IsNullOrEmpty(model.Permission))
+            {
+                return Ok(new { code = 1, message = "未選擇用戶權限" });
             }
 
             string sessionID = HttpContext.Current.Session.SessionID;
@@ -380,6 +399,20 @@ namespace backStage_vue3.Controllers
                 return BadRequest(ModelState);
             }
 
+            string pattern = @"^[a-zA-Z0-9_-]{4,16}$";
+            if (
+                !System.Text.RegularExpressions.Regex.IsMatch(model.UserName, pattern) ||
+                !System.Text.RegularExpressions.Regex.IsMatch(model.Password, pattern))
+            {
+                return Ok(new { code = 1, message = "帳號或密碼格式錯誤，必須是4-16個字符，只能包含字母、數字、下劃線和連字符222" });
+            }
+
+            if (
+                String.IsNullOrEmpty(model.Permission))
+            {
+                return Ok(new { code = 1, message = "未選擇用戶權限" });
+            }
+
             string sessionID = HttpContext.Current.Session.SessionID;
             string currentUserName = HttpContext.Current.Session["currentUser"] as string;
 
@@ -452,17 +485,6 @@ namespace backStage_vue3.Controllers
                     connection.Close();
                 }
             }
-        }
-
-        public IHttpActionResult GetUser(string username)
-        {
-            var users = ConnectToDatabase();
-            var user = users.FirstOrDefault((p) => p.UserName == username);
-            if (user == null)
-            {
-                return NotFound();
-            }
-            return Ok(user);
         }
     }
 }
