@@ -2,20 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Web.Http;
 using backStage_vue3.Models;
-using System.Web.Configuration;
 using System.Data.SqlClient;
 using System.Configuration;
 using System.Data;
 using System.Web.Http.Description;
 using System.Threading.Tasks;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using System.Security.Cryptography;
 using System.Web;
 
 namespace backStage_vue3.Controllers
@@ -23,11 +16,13 @@ namespace backStage_vue3.Controllers
     public class UserController : ApiController
     {
         string conStr;
+        /// <summary> 資料庫相關數據
         public UserController()
         {
             conStr = ConfigurationManager.ConnectionStrings["DbConnection"].ConnectionString;
         }
 
+        /// <summary> 從資料庫獲取用戶資訊
         public List<UserModel> ConnectToDatabase()
         {
             List<UserModel> users = new List<UserModel>();
@@ -50,6 +45,7 @@ namespace backStage_vue3.Controllers
             return users;
         }
 
+        /// <summary> 獲取用戶資訊從 DataTable 轉換成 List
         public List<UserModel> ConvertDataTableToList(DataTable dataTable)
         {
             List<UserModel> users = new List<UserModel>();
@@ -142,6 +138,7 @@ namespace backStage_vue3.Controllers
                     connection.Close();
                 }
             }
+
         }
 
         // HTTP POST 用戶登入 API
@@ -151,6 +148,7 @@ namespace backStage_vue3.Controllers
 
         {
             string pattern = @"^[a-zA-Z0-9_-]{4,16}$";
+
             if (
                 !System.Text.RegularExpressions.Regex.IsMatch(model.UserName, pattern) ||
                 !System.Text.RegularExpressions.Regex.IsMatch(model.Password, pattern))
@@ -159,6 +157,7 @@ namespace backStage_vue3.Controllers
             }
 
             SqlConnection connection = null;
+
             try
             {
                 connection = new SqlConnection(conStr);
@@ -218,6 +217,7 @@ namespace backStage_vue3.Controllers
                     connection.Close();
                 }
             }
+
         }
 
         // HTTP POST 新增用戶 API
@@ -225,12 +225,14 @@ namespace backStage_vue3.Controllers
         [AllowAnonymous]
         public async Task<IHttpActionResult> CreateUser(UserAddModel model)
         {
+
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
             string pattern = @"^[a-zA-Z0-9_-]{4,16}$";
+
             if (
                 !System.Text.RegularExpressions.Regex.IsMatch(model.UserName, pattern) ||
                 !System.Text.RegularExpressions.Regex.IsMatch(model.Password, pattern))
@@ -308,6 +310,7 @@ namespace backStage_vue3.Controllers
                     connection.Close();
                 }
             }
+
         }
 
         // HTTP POST 刪除用戶 API
@@ -315,6 +318,7 @@ namespace backStage_vue3.Controllers
         [AllowAnonymous]
         public async Task<IHttpActionResult> DeleteUser(UserDeleteModel model)
         {
+
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
@@ -387,6 +391,7 @@ namespace backStage_vue3.Controllers
                     connection.Close();
                 }
             }
+
         }
 
         // HTTP POST 更新用戶 API
@@ -394,12 +399,14 @@ namespace backStage_vue3.Controllers
         [AllowAnonymous]
         public async Task<IHttpActionResult> EditUser(UserUpdateModel model)
         {
+
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
             string pattern = @"^[a-zA-Z0-9_-]{4,16}$";
+
             if (
                 !System.Text.RegularExpressions.Regex.IsMatch(model.UserName, pattern) ||
                 !System.Text.RegularExpressions.Regex.IsMatch(model.Password, pattern))
@@ -485,6 +492,7 @@ namespace backStage_vue3.Controllers
                     connection.Close();
                 }
             }
+
         }
     }
 }
