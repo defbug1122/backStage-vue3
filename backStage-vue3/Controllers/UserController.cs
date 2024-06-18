@@ -58,7 +58,6 @@ namespace backStage_vue3.Controllers
                     UserName = row["f_userName"].ToString(),
                     Password = row["f_password"].ToString(),
                     CreateTime = row["f_createTime"] != DBNull.Value ? Convert.ToDateTime(row["f_createTime"]) : DateTime.MinValue,
-                    LoginTime = row["f_loginTime"] != DBNull.Value ? Convert.ToDateTime(row["f_loginTime"]) : DateTime.MinValue,
                     Permission = row["f_Permission"].ToString(),
                 };
                 users.Add(user);
@@ -117,7 +116,6 @@ namespace backStage_vue3.Controllers
                     id = u.Id,
                     userName = u.UserName.ToLower(),
                     password = u.Password.ToLower(),
-                    loginTime = u.LoginTime?.ToString("yyyy-MM-dd"),
                     createTime = u.CreateTime?.ToString("yyyy-MM-dd"),
                     permission = u.Permission
                 });
@@ -179,13 +177,11 @@ namespace backStage_vue3.Controllers
                         {
                             string userId = Convert.ToString(dataTable.Rows[0]["f_id"]);
                             string permission = Convert.ToString(dataTable.Rows[0]["f_permission"]);
-                            DateTime? previousLoginTime = dataTable.Rows[0]["f_loginTime"] != DBNull.Value ? (DateTime?)Convert.ToDateTime(dataTable.Rows[0]["f_loginTime"]) : null;
-                            // 更新新的登入狀態、登入時間和 UUID
+                            // 更新新的登入狀態和 UUID
                             using (SqlCommand updateCommand = new SqlCommand("pro_bs_updateAccountLoginInfo", connection))
                             {
                                 updateCommand.CommandType = CommandType.StoredProcedure;
                                 updateCommand.Parameters.AddWithValue("@UserId", userId);
-                                updateCommand.Parameters.AddWithValue("@LoginTime", DateTime.Now);
                                 updateCommand.Parameters.AddWithValue("@UUID", HttpContext.Current.Session.SessionID);
                                 updateCommand.ExecuteNonQuery();
                             }

@@ -14,9 +14,6 @@ namespace backStage_vue3.Models
         /// <summary> 用戶密碼
         public string Password { get; set; }
 
-        /// <summary> 用戶最近登入時間
-        public DateTime? LoginTime { get; set; }
-
         /// <summary> 用戶創立時間
         public DateTime? CreateTime { get; set; }
 
