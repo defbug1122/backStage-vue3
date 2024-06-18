@@ -368,10 +368,12 @@
   <PropertyGroup>
     <PreBuildEvent>echo Switching to ClientApp directory...
 cd "$(ProjectDir)ClientApp" || (echo "Failed to change directory to ClientApp" &amp;&amp; exit 1)
+
 echo Running npm install...
-npm install --loglevel verbose || (echo "npm install failed" &amp;&amp; exit 1)
+call npm install || (echo "npm install failed" &amp;&amp; exit 1)
+
 echo Running npm run build...
-npm run build || (echo "npm run build failed" &amp;&amp; exit 1)</PreBuildEvent>
+call npm run build || (echo "npm run build failed" &amp;&amp; exit 1)</PreBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
