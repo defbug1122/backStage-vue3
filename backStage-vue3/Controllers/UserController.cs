@@ -442,6 +442,7 @@ namespace backStage_vue3.Controllers
                     command.Parameters.AddWithValue("@newPassword", model.Pwd);
                     command.Parameters.AddWithValue("@newPermission", model.Permission);
                     command.Parameters.AddWithValue("@currentUn", currentUn);
+                    command.Parameters.AddWithValue("@updateTime", DateTime.Now);
 
                     using (SqlDataReader reader = await command.ExecuteReaderAsync())
                     {

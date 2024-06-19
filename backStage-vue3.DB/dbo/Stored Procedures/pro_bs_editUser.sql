@@ -2,7 +2,8 @@
     @un NVARCHAR(50),
     @newPassword NVARCHAR(50),
     @newPermission NVARCHAR(50),
-    @currentUn NVARCHAR(50)
+    @currentUn NVARCHAR(50),
+	@updateTime DATETIME
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -16,7 +17,7 @@ BEGIN
 
     -- 更新用戶密碼和權限
     UPDATE t_acc
-    SET f_pwd = @newPassword, f_permission = @newPermission
+    SET f_pwd = @newPassword, f_permission = @newPermission, f_updateTime = @updateTime
     WHERE f_un = @un;
 
     IF @@ROWCOUNT = 0
