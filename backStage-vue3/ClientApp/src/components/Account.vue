@@ -16,11 +16,11 @@
             <div class="add-form">
               <div class="form-item">
                 <div class="form-title">帳號</div>
-                <n-input type="text" v-model:value="newAccount.username"  placeholder="請輸入欲新增帳號"/>
+                <n-input type="text" v-model:value="newAccount.un"  placeholder="請輸入欲新增帳號"/>
               </div>
               <div class="form-item">
                 <div class="form-title">密碼</div>
-                <n-input type="password" v-model:value="newAccount.password" placeholder="請輸入欲新增密碼"/>
+                <n-input type="passward" v-model:value="newAccount.pwd" placeholder="請輸入欲新增密碼"/>
               </div>
               <div class="form-item">
                 <div class="form-title">等級</div>
@@ -43,13 +43,13 @@
               </thead>
               <tbody>
                 <tr v-for="(item, index) in userData" :key="index">
-                  <td>{{ item.userName }}</td>
+                  <td>{{ item.un }}</td>
                   <td>
-                    <span v-if="!item.isEditing" @click="togglePassword(item)">
-                      <span style="cursor: pointer;" v-if="!item.showPassword">•••••</span>
-                      <span v-else>{{ item.password }}</span>
+                    <span v-if="!item.isEditing" @click="togglepwd(item)">
+                      <span style="cursor: pointer;" v-if="!item.showpwd">•••••</span>
+                      <span v-else>{{ item.pwd }}</span>
                     </span>
-                    <input v-else type="password" v-model="item.password">
+                    <input v-else type="passward" v-model="item.pwd">
                   </td>
                   <td v-if="!item.isEditing">
                     <span v-if="item.permission === '1'">超級管理員</span>
@@ -66,7 +66,7 @@
                   <td>{{item.createTime}}</td>
                   <td v-if="!item.isEditing">
                     <n-button class="button" @click="isEditAccount(item)">修改</n-button>
-                    <n-button class="button" @click="deleteAccount(item.userName)">刪除</n-button>
+                    <n-button class="button" @click="deleteAccount(item.un)">刪除</n-button>
                   </td>
                   <td class="list-item" v-else>
                     <n-button class="button" @click="updateAccount(item)">確定</n-button>
@@ -95,12 +95,12 @@ import Menu from '../components/Menu.vue'
 import { NTable, NInput, NInputGroup, NButton, NLayout, NLayoutSider, NLayoutContent, NSelect } from 'naive-ui'
 
 const newAccount = ref({
-  username: '',
-  password: '',
+  un: '',
+  pwd: '',
   permission: '1'
 })
 const editAccount = ref({
-  password: '',
+  pwd: '',
   permission: ''
 })
 const userData = ref([])
@@ -158,14 +158,14 @@ onMounted(async () => {
 });
 
 const createAccount = async () => {
-  if (newAccount.value.username === '' || newAccount.value.password === '') {
+  if (newAccount.value.un === '' || newAccount.value.pwd === '') {
     errorMsg.value = '請輸入帳號、密碼'
     return
   } else {
     errorMsg.value = ''
   }
 
-  if (!pattern.test(newAccount.value.username) || !pattern.test(newAccount.value.password)) {
+  if (!pattern.test(newAccount.value.un) || !pattern.test(newAccount.value.pwd)) {
     errorMsg.value = '帳號或密碼必須是4-16個字符，只能包含字母、數字、下劃線和連字符';
     return
   } else {
@@ -185,10 +185,10 @@ const createAccount = async () => {
   }
 }
 
-const deleteAccount = async (userName) => {
+const deleteAccount = async (un) => {
   try {
     const response = await axios.post('/api/user/delete', {
-      userName: userName
+      un: un
     })
     if (response.data.code === 0) {
       currentPage.value = 1;
@@ -221,8 +221,8 @@ const nextPage = () => {
   }
 };
 
-const togglePassword = (user) => {
-  user.showPassword = !user.showPassword;
+const togglepwd = (user) => {
+  user.showpwd = !user.showpwd;
 }
 
 const isEditAccount = (user) => {
@@ -230,13 +230,13 @@ const isEditAccount = (user) => {
 }
 
 const updateAccount = async (user) => {
-  if (user.password === '') {
+  if (user.pwd === '') {
     errorMsg.value = '請輸入密碼'
     return
   } else {
     errorMsg.value = ''
   }
-  if (!pattern.test(user.password)) {
+  if (!pattern.test(user.pwd)) {
     errorMsg.value = '帳號或密碼必須是4-16個字符，只能包含字母、數字、下劃線和連字符';
     return
   } else {
@@ -244,8 +244,8 @@ const updateAccount = async (user) => {
   }
   try {
     const response = await axios.post('/api/user/update', {
-      userName: user.userName,
-      password: user.password,
+      un: user.un,
+      pwd: user.pwd,
       permission: user.permission
     })
     if (response.data.code === 0) {
@@ -343,12 +343,12 @@ const updateAccount = async (user) => {
   cursor: pointer;
 }
 
-.password-container {
+.pwd-container {
   width: 100px;
   text-align: center;
 }
 
-.password {
+.pwd {
   cursor: pointer;
 }
 

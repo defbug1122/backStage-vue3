@@ -1,23 +1,23 @@
 ﻿CREATE PROCEDURE [dbo].[pro_bs_editUser]
-    @UserName NVARCHAR(50),
-    @NewPassword NVARCHAR(50),
-    @NewPermission NVARCHAR(50),
-    @CurrentUserName NVARCHAR(50)
+    @un NVARCHAR(50),
+    @newPassword NVARCHAR(50),
+    @newPermission NVARCHAR(50),
+    @currentUn NVARCHAR(50)
 AS
 BEGIN
     SET NOCOUNT ON;
 
     -- 檢查是否正在修改自己的帳號
-    IF @UserName = @CurrentUserName
+    IF @un = @currentUn
     BEGIN
         SELECT 'Cannot edit your own account' AS Message;
         RETURN;
     END
 
     -- 更新用戶密碼和權限
-    UPDATE t_account
-    SET f_password = @NewPassword, f_permission = @NewPermission
-    WHERE f_username = @UserName;
+    UPDATE t_acc
+    SET f_pwd = @newPassword, f_permission = @newPermission
+    WHERE f_un = @un;
 
     IF @@ROWCOUNT = 0
     BEGIN

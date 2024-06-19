@@ -1,4 +1,4 @@
-﻿CREATE TABLE [dbo].[t.products] (
+﻿CREATE TABLE [dbo].[t_products] (
     [id]          INT           NOT NULL,
     [name]        NVARCHAR (50) NOT NULL,
     [ImageUrl]    NVARCHAR (50) NOT NULL,

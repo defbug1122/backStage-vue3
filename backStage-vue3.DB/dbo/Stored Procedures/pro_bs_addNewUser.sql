@@ -1,14 +1,14 @@
 ﻿CREATE PROCEDURE [dbo].[pro_bs_addNewUser]
-    @UserName NVARCHAR(50),
-    @Password NVARCHAR(50),
-    @CreateTime DATETIME,
-    @Permission NVARCHAR(50)
+    @un NVARCHAR(50),
+    @pwd NVARCHAR(50),
+    @createTime DATETIME,
+    @permission NVARCHAR(50)
 AS
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM t_account WHERE f_userName = @UserName)
+    IF NOT EXISTS (SELECT 1 FROM t_acc WHERE f_un = @un)
     BEGIN
-        INSERT INTO t_account (f_userName, f_password, f_createTime, f_permission)
-        VALUES (@UserName, @Password, @CreateTime, @Permission);
+        INSERT INTO t_acc (f_un, f_pwd, f_createTime, f_permission)
+        VALUES (@un, @pwd, @createTime, @permission);
         SELECT 'User created successfully' AS message;
     END
     ELSE

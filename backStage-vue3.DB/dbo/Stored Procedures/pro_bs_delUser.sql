@@ -1,17 +1,17 @@
-﻿CREATE PROCEDURE [dbo].[pro_bs_deleteUser]
-    @UserName NVARCHAR(50),
-    @CurrentUserName NVARCHAR(50)
+﻿CREATE PROCEDURE [dbo].[pro_bs_delUser]
+    @un NVARCHAR(50),
+    @currentUn NVARCHAR(50)
 AS
 BEGIN
-    IF EXISTS (SELECT 1 FROM t_account WHERE f_userName = @UserName)
+    IF EXISTS (SELECT 1 FROM t_acc WHERE f_un = @un)
     BEGIN
-        IF @UserName = @CurrentUserName
+        IF @un = @currentUn
         BEGIN
             SELECT 'Cannot delete yourself' AS message;
         END
         ELSE
         BEGIN
-            DELETE FROM t_account WHERE f_userName = @UserName;
+            DELETE FROM t_acc WHERE f_un = @un;
             SELECT 'User deleted successfully' AS message;
         END
     END

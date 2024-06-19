@@ -6,10 +6,10 @@ namespace backStage_vue3.Models
     public class UserAddModel
     {
         /// <summary> 請求參數-用戶名稱
-        public string UserName { get; set; }
+        public string Un { get; set; }
 
         /// <summary> 請求參數-用戶密碼
-        public string Password { get; set; }
+        public string Pwd { get; set; }
 
         /// <summary> 請求參數-用戶創立時間
         public DateTime? CreateTime { get; set; }

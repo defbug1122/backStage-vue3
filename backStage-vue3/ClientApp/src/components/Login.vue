@@ -4,11 +4,11 @@
     <div class="login-form">
       <div class="form-item">
         <div>帳號</div>
-        <input type="text" id="username" v-model="username"><br>
+        <input type="text" v-model="un"><br>
       </div>
       <div class="form-item">
         <div>密碼</div>
-        <input type="password" id="password" v-model="password"><br><br>
+        <input type="password" v-model="pwd"><br><br>
       </div>
       <input type="submit" value="登入" @click="login" class="login-button">
     </div>
@@ -22,8 +22,8 @@ import { useRouter } from 'vue-router'
 import axios from "axios"
 
 const router = useRouter()
-const username = ref('admin')
-const password = ref('147147')
+const un = ref('admin')
+const pwd = ref('147147')
 const errorMsg = ref('')
 const pattern = /^[a-zA-Z0-9_-]{4,16}$/
 
@@ -41,14 +41,14 @@ const getCookieValue = (cookieName) => {
 }
 
 const login = async () => {
-  if (username.value === '' || password.value === '') {
+  if (un.value === '' || pwd.value === '') {
     errorMsg.value = '請輸入帳號、密碼'
     return
   } else {
     errorMsg.value = ''
   }
 
-  if (!pattern.test(username.value) || !pattern.test(password.value)) {
+  if (!pattern.test(un.value) || !pattern.test(pwd.value)) {
     errorMsg.value = '帳號或密碼必須是4-16個字符，只能包含字母、數字、下劃線和連字符'
     return
   } else {
@@ -57,8 +57,8 @@ const login = async () => {
 
   try {
     const response = await axios.post('/api/user/login', {
-      username: username.value,
-      password: password.value,
+      un: un.value,
+      pwd: pwd.value,
     })
     if (response.data.code === 0) {
       errorMsg.value = ''

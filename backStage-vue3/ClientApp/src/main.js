@@ -30,7 +30,6 @@ axios.interceptors.response.use(
             sessionStorage.removeItem("token");
             sessionStorage.removeItem("role");
             alert('目前維修中，請聯繫系統管理員')
-            router.push('/login');
             console.log('請稍後再試')
         }        
         else {

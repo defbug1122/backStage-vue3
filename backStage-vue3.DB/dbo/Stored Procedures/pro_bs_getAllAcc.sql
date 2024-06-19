@@ -1,0 +1,6 @@
+﻿CREATE PROCEDURE [pro_bs_getAllAcc]
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT * FROM t_acc;
+END;

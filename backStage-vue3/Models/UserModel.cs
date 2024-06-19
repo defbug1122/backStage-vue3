@@ -9,10 +9,10 @@ namespace backStage_vue3.Models
         public int Id { get; set; }
 
         /// <summary> 用戶名
-        public string UserName { get; set; }
+        public string Un { get; set; }
 
         /// <summary> 用戶密碼
-        public string Password { get; set; }
+        public string Pwd { get; set; }
 
         /// <summary> 用戶創立時間
         public DateTime? CreateTime { get; set; }
