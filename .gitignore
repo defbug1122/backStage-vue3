@@ -253,3 +253,7 @@ _Pvt_Extensions
 # JetBrains Rider
 .idea/
 *.sln.iml
+
+# 忽略文件夹
+bin/
+obj/
