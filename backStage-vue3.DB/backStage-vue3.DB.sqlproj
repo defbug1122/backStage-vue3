@@ -75,7 +75,6 @@
     <Build Include="dbo\Stored Procedures\pro_bs_getAllAcc.sql" />
     <Build Include="dbo\Stored Procedures\pro_bs_getUuidByUn.sql" />
     <Build Include="dbo\Stored Procedures\pro_bs_editUser.sql" />
-    <Build Include="dbo\Stored Procedures\pro_bs_editAccLoginInfo.sql" />
     <Build Include="dbo\Stored Procedures\pro_bs_delUser.sql" />
   </ItemGroup>
 </Project>

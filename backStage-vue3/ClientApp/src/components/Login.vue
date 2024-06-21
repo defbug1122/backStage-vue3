@@ -64,12 +64,16 @@ const login = async () => {
       errorMsg.value = ''
       sessionStorage.setItem('token', getCookieValue('uuid'))
       sessionStorage.setItem('role', getCookieValue('permission'))
-      if (sessionStorage.getItem('role') === '1') {
+      sessionStorage.setItem('currentUser', getCookieValue('currentUser'))
+      const role = sessionStorage.getItem('role')
+      if (role === '1'|| role === '2') {
         router.push('/account')
-      } else if (sessionStorage.getItem('role') === '2') {
+      } else if (role === '3'|| role === '4') {
         router.push('/member')
-      } else {
+      } else if (role === '5'|| role === '6') {
         router.push('/product')
+      } else if (role === '7'|| role === '8') {
+        router.push('/order')
       }
     } else {
       errorMsg.value = '請輸入正確帳號、密碼'

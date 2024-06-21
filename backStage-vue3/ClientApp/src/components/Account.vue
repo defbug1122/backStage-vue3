@@ -6,6 +6,7 @@
       </n-layout-sider>
       <n-layout-content style="padding: 16px; width: 80vw; height: 100vh;">
         <div class="content-container">
+          <div style="text-align: right;">用戶: {{ currentUser }}</div>
           <div class="block">
             <n-input-group>
               <n-input v-model:value="searchData" :style="{ width: '50%' }" placeholder="請輸入欲查詢帳號"/>
@@ -24,7 +25,7 @@
               </div>
               <div class="form-item">
                 <div class="form-title">等級</div>
-                <n-select v-model:value="newAccount.permission" :options="options" />
+                <n-select v-model:value="newAccount.permission" :options="options" class="permission-select" />
               </div>
               <n-button type="primary" @click="createAccount">
                 新增
@@ -45,31 +46,34 @@
                 <tr v-for="(item, index) in userData" :key="index">
                   <td>{{ item.un }}</td>
                   <td>
-                    <span v-if="!item.isEditing" @click="togglepwd(item)">
-                      <span style="cursor: pointer;" v-if="!item.showpwd">•••••</span>
-                      <span v-else>{{ item.pwd }}</span>
+                    <span v-if="!item.isEditing">
+                      <span v-if="!item.showpwd">•••••</span>
                     </span>
-                    <input v-else type="passward" v-model="item.pwd">
+                    <input v-else type="passward" v-model="editPwd">
                   </td>
                   <td v-if="!item.isEditing">
                     <span v-if="item.permission === '1'">超級管理員</span>
                     <span v-else-if="item.permission === '2'">管理員</span>
-                    <span v-else>普通用戶</span>
+                    <span v-else-if="item.permission === '3'">會員系統編輯者</span>
+                    <span v-else-if="item.permission === '4'">會員系統查看者</span>
+                    <span v-else-if="item.permission === '5'">商品系統編輯者</span>
+                    <span v-else-if="item.permission === '6'">商品系統查看者</span>
+                    <span v-else-if="item.permission === '7'">訂單系統編輯者</span>
+                    <span v-else-if="item.permission === '8'">訂單系統查看者</span>
                   </td>
                   <td v-else>
-                    <select v-model="item.permission" :value="item.permission">
-                      <option value="1">超級管理員</option>
-                      <option value="2">管理員</option>
-                      <option value="3">普通用戶</option>
-                    </select>
+                    <n-select v-if="item.permission !== '1' && item.permission !== '2'" v-model:value="item.permission" :options="options" />
                   </td>
                   <td>{{item.createTime}}</td>
-                  <td v-if="!item.isEditing">
+                  <td v-if="!item.isEditing && item.permission !== '1'">
                     <n-button class="button" @click="isEditAccount(item)">修改</n-button>
-                    <n-button class="button" @click="deleteAccount(item.un)">刪除</n-button>
+                    <n-button v-if="currentUser !== item.un" class="button" @click="deleteAccount(item.un)">刪除</n-button>
                   </td>
-                  <td class="list-item" v-else>
-                    <n-button class="button" @click="updateAccount(item)">確定</n-button>
+                  <td v-if="!item.isEditing && currentRole === '1' && item.permission === '1'">
+                    <n-button class="button" @click="isEditAccount(item)">修改</n-button>
+                  </td>
+                  <td v-if="item.isEditing">
+                    <n-button class="button" @click="updateAccount(item, editPwd)">確定</n-button>
                     <n-button class="button" @click="isEditAccount(item)">取消</n-button>
                   </td>
                 </tr>
@@ -97,30 +101,45 @@ import { NTable, NInput, NInputGroup, NButton, NLayout, NLayoutSider, NLayoutCon
 const newAccount = ref({
   un: '',
   pwd: '',
-  permission: '1'
-})
-const editAccount = ref({
-  pwd: '',
   permission: ''
 })
+const editPwd = ref('')
 const userData = ref([])
 const searchData = ref('')
 const errorMsg = ref('')
 const currentPage = ref(1);
 const pageSize = 10;
 const hasMore = ref(true);
+const currentUser = sessionStorage.getItem('currentUser')
+const currentRole = sessionStorage.getItem('role')
 const options = [
   {
-    label: "超級管理員",
-    value: '1',
-  },
-  {
-    label: '管理員',
+    label: '管理者',
     value: '2'
   },
   {
-    label: '普通用戶',
+    label: '會員系統編輯者',
     value: '3'
+  },
+  {
+    label: '會員系統查看者',
+    value: '4'
+  },
+  {
+    label: '商品系統編輯者',
+    value: '5'
+  },
+  {
+    label: '商品系統查看者',
+    value: '6'
+  },
+  {
+    label: '訂單系統編輯者',
+    value: '7'
+  },
+  {
+    label: '訂單系統查看者',
+    value: '8'
   },
 ]
 const pattern = /^[a-zA-Z0-9_-]{4,16}$/;
@@ -165,6 +184,13 @@ const createAccount = async () => {
     errorMsg.value = ''
   }
 
+  if (newAccount.value.permission === '') {
+    errorMsg.value = '請選擇權限'
+    return
+  } else {
+    errorMsg.value = ''
+  }
+
   if (!pattern.test(newAccount.value.un) || !pattern.test(newAccount.value.pwd)) {
     errorMsg.value = '帳號或密碼必須是4-16個字符，只能包含字母、數字、下劃線和連字符';
     return
@@ -176,9 +202,9 @@ const createAccount = async () => {
     const response = await axios.post('/api/user/add', newAccount.value)
     if (response.data.code === 0) {
       getUserList()
-      alert(response.data.message)
+      alert('創建成功')
     } else {
-      alert(response.data.message)
+      alert('創建失敗，用戶已存在')
     }
   } catch (error) {
     console.error('error', error)
@@ -193,9 +219,12 @@ const deleteAccount = async (un) => {
     if (response.data.code === 0) {
       currentPage.value = 1;
       getUserList()
-      alert(response.data.message)
-    } else {
-      alert(response.data.message)
+      alert('刪除成功')
+    } else if (response.data.code === 4) {
+      alert('不能刪除自己')
+    }
+      else { 
+      alert('刪除失敗')
     }
   } catch (error) {
     console.error('error', error)
@@ -229,14 +258,15 @@ const isEditAccount = (user) => {
   user.isEditing = !user.isEditing;
 }
 
-const updateAccount = async (user) => {
-  if (user.pwd === '') {
+const updateAccount = async (user, editPwd) => {
+  console.log(user,'ssdsdsds')
+  if (editPwd === '') {
     errorMsg.value = '請輸入密碼'
     return
   } else {
     errorMsg.value = ''
   }
-  if (!pattern.test(user.pwd)) {
+  if (!pattern.test(editPwd)) {
     errorMsg.value = '帳號或密碼必須是4-16個字符，只能包含字母、數字、下劃線和連字符';
     return
   } else {
@@ -245,15 +275,15 @@ const updateAccount = async (user) => {
   try {
     const response = await axios.post('/api/user/update', {
       un: user.un,
-      pwd: user.pwd,
+      pwd: editPwd,
       permission: user.permission
     })
     if (response.data.code === 0) {
       currentPage.value = 1;
       getUserList()
-      alert(response.data.message)
+      alert('更新成功')
     } else {
-      alert(response.data.message)
+      alert('更新失敗')
     }
   } catch (error) {
     console.error('error', error)
@@ -284,6 +314,10 @@ const updateAccount = async (user) => {
   justify-content: center;
   align-items: center;
   margin: 20px 0;
+}
+
+.permission-select {
+  width: 150px;
 }
 
 .user-list {

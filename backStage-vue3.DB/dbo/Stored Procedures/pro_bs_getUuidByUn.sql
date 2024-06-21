@@ -2,5 +2,5 @@
     @currentUn NVARCHAR(50)
 AS
 BEGIN
-    SELECT f_uuid FROM t_acc WHERE f_un = @currentUn;
+    SELECT f_uuid FROM t_acc WITH(NOLOCK) WHERE f_un = @currentUn;
 END

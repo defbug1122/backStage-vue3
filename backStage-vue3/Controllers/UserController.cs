@@ -5,80 +5,46 @@ using System.Net;
 using System.Web.Http;
 using backStage_vue3.Models;
 using System.Data.SqlClient;
-using System.Configuration;
 using System.Data;
-using System.Web.Http.Description;
 using System.Threading.Tasks;
 using System.Web;
+using backStage_vue3.Utilities;
 
 namespace backStage_vue3.Controllers
 {
     public class UserController : ApiController
     {
-        string conStr;
-        /// <summary> 資料庫相關數據
-        public UserController()
+        string sessionID = HttpContext.Current.Session.SessionID;
+        
+        private UserSessionModel GetCurrentUserSession()
         {
-            conStr = ConfigurationManager.ConnectionStrings["DbConnection"].ConnectionString;
+            return HttpContext.Current.Session["userSessionInfo"] as UserSessionModel;
         }
 
-        /// <summary> 從資料庫獲取用戶資訊
-        public List<UserModel> ConnectToDatabase()
-        {
-            List<UserModel> users = new List<UserModel>();
-
-            using (SqlConnection connection = new SqlConnection(conStr))
-            {
-                connection.Open();
-                using (SqlCommand command = new SqlCommand("pro_bs_getAllAcc", connection))
-                {
-                    using (SqlDataAdapter adapter = new SqlDataAdapter(command))
-                    {
-                        DataTable dataTable = new DataTable();
-                        adapter.Fill(dataTable);
-
-                        users = ConvertDataTableToList(dataTable);
-                    }
-                }
-            }
-
-            return users;
-        }
-
-        /// <summary> 獲取用戶資訊從 DataTable 轉換成 List
-        public List<UserModel> ConvertDataTableToList(DataTable dataTable)
-        {
-            List<UserModel> users = new List<UserModel>();
-
-            foreach (DataRow row in dataTable.Rows)
-            {
-                UserModel user = new UserModel
-                {
-                    Id = Convert.ToInt32(row["f_id"]),
-                    Un = row["f_un"].ToString(),
-                    Pwd = row["f_pwd"].ToString(),
-                    CreateTime = row["f_createTime"] != DBNull.Value ? Convert.ToDateTime(row["f_createTime"]) : DateTime.MinValue,
-                    Permission = row["f_Permission"].ToString(),
-                };
-                users.Add(user);
-            }
-
-            return users;
-        }
-
-        // HTTP GET 取得用戶列表 API
+        /// <summary>
+        /// HTTP GET 取得用戶列表 API
+        /// </summary>
+        /// <param name="searchTerm"></param>
+        /// <param name="pageNumber"></param>
+        /// <param name="pageSize"></param>
+        /// <returns></returns>
         [HttpGet, Route("api/user/list")]
-        [ResponseType(typeof(IEnumerable<UserModel>))]
         public async Task<IHttpActionResult> GetUsers(string searchTerm = "", int pageNumber = 1, int pageSize = 10)
         {
-            string sessionID = HttpContext.Current.Session.SessionID;
-            string currentUn = HttpContext.Current.Session["currentUser"] as string;
+            var userSession = GetCurrentUserSession();
+
+            if (string.IsNullOrEmpty(sessionID) || userSession == null)
+            {
+                return StatusCode(HttpStatusCode.Unauthorized);
+            }
+
+            string currentUn = userSession.CurrentUser;
 
             SqlConnection connection = null;
 
             try
             {
-                connection = new SqlConnection(conStr);
+                connection = new SqlConnection(SqlConfig.conStr);
                 connection.Open();
                 using (SqlCommand checkCommand = new SqlCommand("pro_bs_getUuidByUn", connection))
                 {
@@ -92,37 +58,49 @@ namespace backStage_vue3.Controllers
                     }
                 }
 
-                var users = ConnectToDatabase();
-
-                // 模糊搜索
-                if (!string.IsNullOrEmpty(searchTerm))
+                using (SqlCommand command = new SqlCommand("pro_bs_getAllAcc", connection))
                 {
-                    users = users.Where(u => u.Un.ToLower().Contains(searchTerm.ToLower())).ToList();
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.AddWithValue("@searchTerm", searchTerm);
+                    command.Parameters.AddWithValue("@pageNumber", pageNumber);
+                    command.Parameters.AddWithValue("@pageSize", pageSize);
+
+                    using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                    {
+                        List<UserModel> users = new List<UserModel>();
+                        while (reader.Read())
+                        {
+                            UserModel user = new UserModel
+                            {
+                                Id = Convert.ToInt32(reader["f_id"]),
+                                Un = reader["f_un"].ToString(),
+                                CreateTime = reader["f_createTime"] != DBNull.Value ? Convert.ToDateTime(reader["f_createTime"]) : DateTime.MinValue,
+                                Permission = reader["f_Permission"].ToString(),
+                            };
+                            users.Add(user);
+                        }
+
+                        reader.NextResult();
+
+                        int totalRecords = 0;
+                        if (reader.Read())
+                        {
+                            totalRecords = Convert.ToInt32(reader["TotalRecords"]);
+                        }
+
+                        var lowercaseUsers = users.Select(u => new
+                        {
+                            id = u.Id,
+                            un = u.Un.ToLower(),
+                            createTime = u.CreateTime?.ToString("yyyy-MM-dd"),
+                            permission = u.Permission
+                        });
+
+                        bool hasMore = (pageNumber * pageSize) < totalRecords;
+
+                        return Ok(new { code = StatusResCode.Success, data = lowercaseUsers, hasMore = hasMore });
+                    }
                 }
-
-                // 排序-帳號創立日期
-                users = users.OrderByDescending(u => u.CreateTime).ToList();
-
-                // 計算資料總數
-                int totalRecords = users.Count();
-
-                // 分頁
-                users = users.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
-
-
-                var lowercaseUsers = users.Select(u => new
-                {
-                    id = u.Id,
-                    un = u.Un.ToLower(),
-                    pwd = u.Pwd.ToLower(),
-                    createTime = u.CreateTime?.ToString("yyyy-MM-dd"),
-                    permission = u.Permission
-                });
-
-                // 判斷是否還有更多資料
-                bool hasMore = (pageNumber * pageSize) < totalRecords;
-
-                return Ok(new { code = 0, message = "請求成功", data = lowercaseUsers, hasMore = hasMore });
             }
             catch (Exception ex)
             {
@@ -138,86 +116,116 @@ namespace backStage_vue3.Controllers
 
         }
 
-        // HTTP POST 用戶登入 API
+        /// <summary>
+        /// HTTP POST 用户登入 API
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
         [HttpPost, Route("api/user/login")]
         public async Task<IHttpActionResult> Login(UserLoginModel model)
-
         {
-            string pattern = @"^[a-zA-Z0-9_-]{4,16}$";
 
-            if (
-                !System.Text.RegularExpressions.Regex.IsMatch(model.Un, pattern) ||
-                !System.Text.RegularExpressions.Regex.IsMatch(model.Pwd, pattern))
+            if (!ModelState.IsValid)
             {
-                return Ok(new { code = 1, message = "帳號或密碼格式錯誤，必須是4-16個字符，只能包含字母、數字、下劃線和連字符" });
+                return BadRequest(ModelState);
             }
 
-            SqlConnection connection = null;
+            string pattern = @"^[a-zA-Z0-9_-]{4,16}$";
 
-            try
+            if (!System.Text.RegularExpressions.Regex.IsMatch(model.Un, pattern) ||
+                !System.Text.RegularExpressions.Regex.IsMatch(model.Pwd, pattern))
             {
-                connection = new SqlConnection(conStr);
-                connection.Open();
+                return Ok(new { code = StatusResCode.InvalidFormat });
+            }
 
-                using (SqlCommand command = new SqlCommand("pro_bs_getUserLogin", connection))
+            string hashPwd = HashHelper.ComputeSha256Hash(model.Pwd);
+
+            using (SqlConnection connection = new SqlConnection(SqlConfig.conStr))
+            {
+                try
                 {
-                    command.CommandType = CommandType.StoredProcedure;
-                    command.Parameters.AddWithValue("@un", model.Un);
-                    command.Parameters.AddWithValue("@pwd", model.Pwd);
+                    connection.Open();
 
-                    using (SqlDataAdapter adapter = new SqlDataAdapter(command))
+                    using (SqlCommand command = new SqlCommand("pro_bs_getUserLogin", connection))
                     {
-                        DataTable dataTable = new DataTable();
-                        adapter.Fill(dataTable);
+                        command.CommandType = CommandType.StoredProcedure;
+                        command.Parameters.AddWithValue("@un", model.Un);
+                        command.Parameters.AddWithValue("@pwd", hashPwd);
+                        command.Parameters.AddWithValue("@uuid", HttpContext.Current.Session.SessionID);
+                        SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
+                        {
+                            Direction = ParameterDirection.Output
+                        };
+                        command.Parameters.Add(statusCodeParam);
 
-                        var response = HttpContext.Current.Response;
-                        if (dataTable.Rows.Count > 0)
+                        using (SqlDataAdapter adapter = new SqlDataAdapter(command))
                         {
-                            string userId = Convert.ToString(dataTable.Rows[0]["f_id"]);
-                            string permission = Convert.ToString(dataTable.Rows[0]["f_permission"]);
-                            // 更新新的登入狀態和 UUID
-                            using (SqlCommand updateCommand = new SqlCommand("pro_bs_editAccLoginInfo", connection))
+                            DataTable dataTable = new DataTable();
+                            adapter.Fill(dataTable);
+
+                            int statusCode = (int)statusCodeParam.Value;
+                            if (statusCode == 0 && dataTable.Rows.Count > 0)
                             {
-                                updateCommand.CommandType = CommandType.StoredProcedure;
-                                updateCommand.Parameters.AddWithValue("@userId", userId);
-                                updateCommand.Parameters.AddWithValue("@uuid", HttpContext.Current.Session.SessionID);
-                                updateCommand.ExecuteNonQuery();
+                                string userId = Convert.ToString(dataTable.Rows[0]["f_id"]);
+                                string permission = Convert.ToString(dataTable.Rows[0]["f_permission"]);
+
+                                UserSessionModel userSession = new UserSessionModel
+                                {
+                                    CurrentUser = model.Un,
+                                    CurrentPermission = permission
+                                };
+
+                                HttpContext.Current.Session["userSessionInfo"] = userSession;
+
+                                HttpCookie uuidCookie = new HttpCookie("uuid", HttpContext.Current.Session.SessionID);
+                                HttpCookie permissionCookie = new HttpCookie("permission", permission);
+                                HttpCookie currentUserCookie = new HttpCookie("currentUser", model.Un);
+
+                                HttpContext.Current.Response.Cookies.Add(uuidCookie);
+                                HttpContext.Current.Response.Cookies.Add(permissionCookie);
+                                HttpContext.Current.Response.Cookies.Add(currentUserCookie);
+
+                                return Ok(new { code = StatusResCode.Success });
                             }
-                            HttpContext.Current.Session["currentUser"] = model.Un;
-                            HttpCookie cookie1 = new HttpCookie("uuid");
-                            HttpCookie cookie2 = new HttpCookie("permission");
-                            cookie1.Value = HttpContext.Current.Session.SessionID;
-                            cookie2.Value = permission;
-                            response.Cookies.Add(cookie1);
-                            response.Cookies.Add(cookie2);
-                            return Ok(new { code = 0, message = "登入成功" });
-                        }
-                        else
-                        {
-                            return Ok(new { code = 1, message = "無效的帳號或密碼，請重新登入" });
+                            else
+                            {
+                                return Ok(new { code = StatusResCode.Failed });
+                            }
                         }
                     }
                 }
-
-            }
-            catch (Exception ex)
-            {
-                return InternalServerError(ex);
-            }
-            finally
-            {
-                if (connection != null && connection.State == ConnectionState.Open)
+                catch (Exception ex)
                 {
-                    connection.Close();
+                    return InternalServerError(ex);
+                }
+                finally
+                {
+                    if (connection != null && connection.State == ConnectionState.Open)
+                    {
+                        connection.Close();
+                    }
                 }
             }
 
         }
 
-        // HTTP POST 新增用戶 API
+        /// <summary>
+        /// HTTP POST 新增用戶 API
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
         [HttpPost, Route("api/user/add")]
         public async Task<IHttpActionResult> CreateUser(UserAddModel model)
         {
+
+            var userSession = GetCurrentUserSession();
+
+            if (string.IsNullOrEmpty(sessionID) || userSession == null)
+            {
+                return StatusCode(HttpStatusCode.Unauthorized);
+            }
+
+            model.CurrentUser = userSession.CurrentUser;
 
             if (!ModelState.IsValid)
             {
@@ -230,30 +238,23 @@ namespace backStage_vue3.Controllers
                 !System.Text.RegularExpressions.Regex.IsMatch(model.Un, pattern) ||
                 !System.Text.RegularExpressions.Regex.IsMatch(model.Pwd, pattern))
             {
-                return Ok(new { code = 1, message = "帳號或密碼格式錯誤，必須是4-16個字符，只能包含字母、數字、下劃線和連字符222" });
+                return Ok(new { code = StatusResCode.InvalidFormat });
             }
-
-            if (
-                String.IsNullOrEmpty(model.Permission))
-            {
-                return Ok(new { code = 1, message = "未選擇用戶權限" });
-            }
-
-            string sessionID = HttpContext.Current.Session.SessionID;
-            string currentUn = HttpContext.Current.Session["currentUser"] as string;
 
             SqlConnection connection = null;
 
+            string hashPwd = HashHelper.ComputeSha256Hash(model.Pwd);
+
             try
             {
-                connection = new SqlConnection(conStr);
+                connection = new SqlConnection(SqlConfig.conStr);
                 connection.Open();
 
                 // 驗證 sessionID 是否與資料庫中的 f_uuid 匹配
                 using (SqlCommand checkCommand = new SqlCommand("pro_bs_getUuidByUn", connection))
                 {
                     checkCommand.CommandType = CommandType.StoredProcedure;
-                    checkCommand.Parameters.AddWithValue("@currentUn", currentUn);
+                    checkCommand.Parameters.AddWithValue("@currentUn", model.CurrentUser);
 
                     var result = await checkCommand.ExecuteScalarAsync();
                     if (result == null || result.ToString() != sessionID)
@@ -267,28 +268,26 @@ namespace backStage_vue3.Controllers
                 {
                     command.CommandType = CommandType.StoredProcedure;
                     command.Parameters.AddWithValue("@un", model.Un);
-                    command.Parameters.AddWithValue("@pwd", model.Pwd);
+                    command.Parameters.AddWithValue("@pwd", hashPwd);
                     command.Parameters.AddWithValue("@createTime", DateTime.Now);
                     command.Parameters.AddWithValue("@permission", model.Permission);
 
-                    using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                    SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
                     {
-                        if (reader.Read())
-                        {
-                            string message = reader.GetString(0);
-                            if (message == "User created successfully")
-                            {
-                                return Ok(new { code = 0, message = "創建成功" });
-                            }
-                            else
-                            {
-                                return Ok(new { code = 1, message = "用戶已存在" });
-                            }
-                        }
-                        else
-                        {
-                            return InternalServerError(new Exception("No message returned from stored procedure."));
-                        }
+                        Direction = ParameterDirection.Output
+                    };
+                    command.Parameters.Add(statusCodeParam);
+
+                    await command.ExecuteNonQueryAsync();
+
+                    int statusCode = (int)statusCodeParam.Value;
+                    if (statusCode == 0)
+                    {
+                        return Ok(new { code = StatusResCode.Success });
+                    }
+                    else
+                    {
+                        return Ok(new { code = StatusResCode.Failed });
                     }
                 }
             }
@@ -306,31 +305,46 @@ namespace backStage_vue3.Controllers
 
         }
 
-        // HTTP POST 刪除用戶 API
+        /// <summary>
+        /// HTTP POST 刪除用戶 API
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
         [HttpPost, Route("api/user/delete")]
         public async Task<IHttpActionResult> DeleteUser(UserDeleteModel model)
         {
+
+            var userSession = GetCurrentUserSession();
+
+            if (string.IsNullOrEmpty(sessionID) || userSession == null)
+            {
+                return StatusCode(HttpStatusCode.Unauthorized);
+            }
+
+            model.CurrentUser = userSession.CurrentUser;
 
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
-            string sessionID = HttpContext.Current.Session.SessionID;
-            string currentUn = HttpContext.Current.Session["currentUser"] as string;
+            if (model.CurrentUser == model.Un)
+            {
+                return Ok(new { code = StatusResCode.DeleteMyself });
+            }
 
             SqlConnection connection = null;
 
             try
             {
 
-                connection = new SqlConnection(conStr);
+                connection = new SqlConnection(SqlConfig.conStr);
                 connection.Open();
                 // 驗證 sessionID 是否與資料庫中的 f_uuid 匹配
                 using (SqlCommand checkCommand = new SqlCommand("pro_bs_getUuidByUn", connection))
                 {
                     checkCommand.CommandType = CommandType.StoredProcedure;
-                    checkCommand.Parameters.AddWithValue("@currentUn", currentUn);
+                    checkCommand.Parameters.AddWithValue("@currentUn", model.CurrentUser);
 
                     var result = await checkCommand.ExecuteScalarAsync();
                     if (result == null || result.ToString() != sessionID)
@@ -344,30 +358,24 @@ namespace backStage_vue3.Controllers
                 {
                     command.CommandType = CommandType.StoredProcedure;
                     command.Parameters.AddWithValue("@un", model.Un);
-                    command.Parameters.AddWithValue("@currentUn", currentUn);
+                    command.Parameters.AddWithValue("@currentUn", model.CurrentUser);
 
-                    using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                    SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
                     {
-                        if (reader.Read())
-                        {
-                            string message = reader.GetString(0);
-                            if (message == "User deleted successfully")
-                            {
-                                return Ok(new { code = 0, message = "刪除成功" });
-                            }
-                            else if (message == "Cannot delete yourself")
-                            {
-                                return Ok(new { code = 1, message = "不能刪除自己" });
-                            }
-                            else
-                            {
-                                return Ok(new { code = 2, message = "用戶不存在" });
-                            }
-                        }
-                        else
-                        {
-                            return InternalServerError(new Exception("No message returned from stored procedure."));
-                        }
+                        Direction = ParameterDirection.Output
+                    };
+                    command.Parameters.Add(statusCodeParam);
+
+                    await command.ExecuteNonQueryAsync();
+
+                    int statusCode = (int)statusCodeParam.Value;
+                    if (statusCode == 0)
+                    {
+                        return Ok(new { code = StatusResCode.Success });
+                    }
+                    else
+                    {
+                        return Ok(new { code = StatusResCode.Failed });
                     }
                 }
             }
@@ -386,10 +394,23 @@ namespace backStage_vue3.Controllers
 
         }
 
-        // HTTP POST 更新用戶 API
+        /// <summary>
+        /// HTTP POST 更新用戶 API
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
         [HttpPost, Route("api/user/update")]
         public async Task<IHttpActionResult> EditUser(UserUpdateModel model)
         {
+
+            var userSession = GetCurrentUserSession();
+
+            if (string.IsNullOrEmpty(sessionID) || userSession == null)
+            {
+                return StatusCode(HttpStatusCode.Unauthorized);
+            }
+
+            model.CurrentUser = userSession.CurrentUser;
 
             if (!ModelState.IsValid)
             {
@@ -402,30 +423,23 @@ namespace backStage_vue3.Controllers
                 !System.Text.RegularExpressions.Regex.IsMatch(model.Un, pattern) ||
                 !System.Text.RegularExpressions.Regex.IsMatch(model.Pwd, pattern))
             {
-                return Ok(new { code = 1, message = "帳號或密碼格式錯誤，必須是4-16個字符，只能包含字母、數字、下劃線和連字符222" });
+                return Ok(new { code = StatusResCode.InvalidFormat });
             }
 
-            if (
-                String.IsNullOrEmpty(model.Permission))
-            {
-                return Ok(new { code = 1, message = "未選擇用戶權限" });
-            }
-
-            string sessionID = HttpContext.Current.Session.SessionID;
-            string currentUn = HttpContext.Current.Session["currentUser"] as string;
+            string hashPwd = HashHelper.ComputeSha256Hash(model.Pwd);
 
             SqlConnection connection = null;
 
             try
             {
-                connection = new SqlConnection(conStr);
+                connection = new SqlConnection(SqlConfig.conStr);
                 connection.Open();
 
                 // 驗證 sessionID 是否與資料庫中的 f_uuid 匹配
                 using (SqlCommand checkCommand = new SqlCommand("pro_bs_getUuidByUn", connection))
                 {
                     checkCommand.CommandType = CommandType.StoredProcedure;
-                    checkCommand.Parameters.AddWithValue("@currentUn", currentUn);
+                    checkCommand.Parameters.AddWithValue("@currentUn", model.CurrentUser);
 
                     var result = await checkCommand.ExecuteScalarAsync();
                     if (result == null || result.ToString() != sessionID)
@@ -439,37 +453,27 @@ namespace backStage_vue3.Controllers
                 {
                     command.CommandType = CommandType.StoredProcedure;
                     command.Parameters.AddWithValue("@un", model.Un);
-                    command.Parameters.AddWithValue("@newPassword", model.Pwd);
+                    command.Parameters.AddWithValue("@newPwd", hashPwd);
                     command.Parameters.AddWithValue("@newPermission", model.Permission);
-                    command.Parameters.AddWithValue("@currentUn", currentUn);
+                    command.Parameters.AddWithValue("@currentUn", model.CurrentUser);
                     command.Parameters.AddWithValue("@updateTime", DateTime.Now);
 
-                    using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                    SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
                     {
-                        if (reader.Read())
-                        {
-                            string message = reader.GetString(0);
-                            if (message == "User updated successfully")
-                            {
-                                return Ok(new { code = 0, message = "更新成功" });
-                            }
-                            else if (message == "Cannot edit your own account")
-                            {
-                                return Ok(new { code = 1, message = "不能修改自己的帳號" });
-                            }
-                            else if (message == "User not found")
-                            {
-                                return Ok(new { code = 2, message = "用戶不存在" });
-                            }
-                            else
-                            {
-                                return Ok(new { code = 3, message = "未知錯誤" });
-                            }
-                        }
-                        else
-                        {
-                            return InternalServerError(new Exception("No message returned from stored procedure."));
-                        }
+                        Direction = ParameterDirection.Output
+                    };
+                    command.Parameters.Add(statusCodeParam);
+
+                    await command.ExecuteNonQueryAsync();
+
+                    int statusCode = (int)statusCodeParam.Value;
+                    if (statusCode == 0)
+                    {
+                        return Ok(new { code = StatusResCode.Success });
+                    }
+                    else
+                    {
+                        return Ok(new { code = StatusResCode.Failed });
                     }
                 }
             }
