@@ -34,5 +34,10 @@ namespace backStage_vue3.Models
         /// 不能刪除自己
         /// </summary>
         DeleteMyself = 4,
+
+        /// <summary>
+        /// 當前登入用戶SessionId與資料庫不匹配
+        /// </summary>
+        UnMatchSessionId = 5,
     }
 }

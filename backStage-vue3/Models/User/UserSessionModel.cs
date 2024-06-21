@@ -14,5 +14,10 @@
         /// 當前登入用戶權限
         /// </summary>
         public string CurrentPermission { get; set; }
+
+        /// <summary>
+        /// 當前登入用戶sessionID
+        /// </summary>
+        public string CurrentsessionID { get; set; }
     }
 }

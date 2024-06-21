@@ -21,7 +21,7 @@
               </div>
               <div class="form-item">
                 <div class="form-title">密碼</div>
-                <n-input type="passward" v-model:value="newAccount.pwd" placeholder="請輸入欲新增密碼"/>
+                <n-input type="password" v-model:value="newAccount.pwd" placeholder="請輸入欲新增密碼"/>
               </div>
               <div class="form-item">
                 <div class="form-title">等級</div>
@@ -49,7 +49,7 @@
                     <span v-if="!item.isEditing">
                       <span v-if="!item.showpwd">•••••</span>
                     </span>
-                    <input v-else type="passward" v-model="editPwd">
+                    <input v-else type="password" v-model="editPwd">
                   </td>
                   <td v-if="!item.isEditing">
                     <span v-if="item.permission === '1'">超級管理員</span>

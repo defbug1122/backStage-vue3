@@ -14,8 +14,10 @@ namespace backStage_vue3.Controllers
 {
     public class UserController : ApiController
     {
-        string sessionID = HttpContext.Current.Session.SessionID;
-        
+        /// <summary>
+        /// 當前用戶Sessio資料
+        /// </summary>
+        /// <returns></returns>
         private UserSessionModel GetCurrentUserSession()
         {
             return HttpContext.Current.Session["userSessionInfo"] as UserSessionModel;
@@ -33,74 +35,85 @@ namespace backStage_vue3.Controllers
         {
             var userSession = GetCurrentUserSession();
 
-            if (string.IsNullOrEmpty(sessionID) || userSession == null)
+            if (userSession == null)
             {
                 return StatusCode(HttpStatusCode.Unauthorized);
             }
 
             string currentUn = userSession.CurrentUser;
+            string currentSessionID = userSession.CurrentsessionID;
 
             SqlConnection connection = null;
+            SqlCommand command = null;
+            SqlDataReader reader = null;
 
             try
             {
                 connection = new SqlConnection(SqlConfig.conStr);
-                connection.Open();
-                using (SqlCommand checkCommand = new SqlCommand("pro_bs_getUuidByUn", connection))
+                await connection.OpenAsync();
+                command = new SqlCommand("pro_bs_getAllAcc", connection)
                 {
-                    checkCommand.CommandType = CommandType.StoredProcedure;
-                    checkCommand.Parameters.AddWithValue("@currentUn", currentUn);
+                    CommandType = CommandType.StoredProcedure
+                };
 
-                    var result = await checkCommand.ExecuteScalarAsync();
-                    if (result == null || result.ToString() != sessionID)
-                    {
-                        return StatusCode(HttpStatusCode.Unauthorized);
-                    }
+                command.CommandType = CommandType.StoredProcedure;
+                command.Parameters.AddWithValue("@currentUn", currentUn);
+                command.Parameters.AddWithValue("@currentSessionID", currentSessionID);
+                command.Parameters.AddWithValue("@searchTerm", searchTerm);
+                command.Parameters.AddWithValue("@pageNumber", pageNumber);
+                command.Parameters.AddWithValue("@pageSize", pageSize);
+
+                SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
+                {
+                    Direction = ParameterDirection.Output
+                };
+                command.Parameters.Add(statusCodeParam);
+
+                await command.ExecuteNonQueryAsync();
+
+                int statusCode = (int)statusCodeParam.Value;
+
+                if (statusCode == 5)
+                {
+                    return StatusCode(HttpStatusCode.Unauthorized);
                 }
 
-                using (SqlCommand command = new SqlCommand("pro_bs_getAllAcc", connection))
+                reader = await command.ExecuteReaderAsync();
+
+                List<UserModel> users = new List<UserModel>();
+
+                while (await reader.ReadAsync())
                 {
-                    command.CommandType = CommandType.StoredProcedure;
-                    command.Parameters.AddWithValue("@searchTerm", searchTerm);
-                    command.Parameters.AddWithValue("@pageNumber", pageNumber);
-                    command.Parameters.AddWithValue("@pageSize", pageSize);
-
-                    using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                    UserModel user = new UserModel
                     {
-                        List<UserModel> users = new List<UserModel>();
-                        while (reader.Read())
-                        {
-                            UserModel user = new UserModel
-                            {
-                                Id = Convert.ToInt32(reader["f_id"]),
-                                Un = reader["f_un"].ToString(),
-                                CreateTime = reader["f_createTime"] != DBNull.Value ? Convert.ToDateTime(reader["f_createTime"]) : DateTime.MinValue,
-                                Permission = reader["f_Permission"].ToString(),
-                            };
-                            users.Add(user);
-                        }
-
-                        reader.NextResult();
-
-                        int totalRecords = 0;
-                        if (reader.Read())
-                        {
-                            totalRecords = Convert.ToInt32(reader["TotalRecords"]);
-                        }
-
-                        var lowercaseUsers = users.Select(u => new
-                        {
-                            id = u.Id,
-                            un = u.Un.ToLower(),
-                            createTime = u.CreateTime?.ToString("yyyy-MM-dd"),
-                            permission = u.Permission
-                        });
-
-                        bool hasMore = (pageNumber * pageSize) < totalRecords;
-
-                        return Ok(new { code = StatusResCode.Success, data = lowercaseUsers, hasMore = hasMore });
-                    }
+                        Id = Convert.ToInt32(reader["f_id"]),
+                        Un = reader["f_un"].ToString(),
+                        CreateTime = reader["f_createTime"] != DBNull.Value ? Convert.ToDateTime(reader["f_createTime"]) : DateTime.MinValue,
+                        Permission = reader["f_Permission"].ToString(),
+                    };
+                    users.Add(user);
                 }
+
+                await reader.NextResultAsync();
+
+                int totalRecords = 0;
+
+                if (await reader.ReadAsync())
+                {
+                    totalRecords = Convert.ToInt32(reader["TotalRecords"]);
+                }
+
+                var lowercaseUsers = users.Select(u => new
+                {
+                    id = u.Id,
+                    un = u.Un.ToLower(),
+                    createTime = u.CreateTime?.ToString("yyyy-MM-dd"),
+                    permission = u.Permission
+                });
+
+                bool hasMore = (pageNumber * pageSize) < totalRecords;
+
+                return Ok(new { code = StatusResCode.Success, data = lowercaseUsers, hasMore = hasMore });
             }
             catch (Exception ex)
             {
@@ -111,6 +124,11 @@ namespace backStage_vue3.Controllers
                 if (connection != null && connection.State == ConnectionState.Open)
                 {
                     connection.Close();
+                    command.Parameters.Clear();
+                }
+                if (reader != null)
+                {
+                    reader.Close();
                 }
             }
 
@@ -125,11 +143,6 @@ namespace backStage_vue3.Controllers
         public async Task<IHttpActionResult> Login(UserLoginModel model)
         {
 
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
             string pattern = @"^[a-zA-Z0-9_-]{4,16}$";
 
             if (!System.Text.RegularExpressions.Regex.IsMatch(model.Un, pattern) ||
@@ -140,70 +153,83 @@ namespace backStage_vue3.Controllers
 
             string hashPwd = HashHelper.ComputeSha256Hash(model.Pwd);
 
-            using (SqlConnection connection = new SqlConnection(SqlConfig.conStr))
+            SqlConnection connection = null;
+            SqlCommand command = null;
+            SqlDataReader reader = null;
+
+            try
             {
-                try
-                {
-                    connection.Open();
+                connection = new SqlConnection(SqlConfig.conStr);
+                await connection.OpenAsync();
 
-                    using (SqlCommand command = new SqlCommand("pro_bs_getUserLogin", connection))
+                command = new SqlCommand("pro_bs_getUserLogin", connection)
+                {
+                    CommandType = CommandType.StoredProcedure
+                };
+                command.Parameters.AddWithValue("@un", model.Un);
+                command.Parameters.AddWithValue("@pwd", hashPwd);
+                command.Parameters.AddWithValue("@uuid", HttpContext.Current.Session.SessionID);
+                SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
+                {
+                    Direction = ParameterDirection.Output
+                };
+                command.Parameters.Add(statusCodeParam);
+
+                await command.ExecuteNonQueryAsync();
+
+                int statusCode = (int)statusCodeParam.Value;
+                if (statusCode == 0)
+                {
+                    reader = await command.ExecuteReaderAsync();
+                    if (reader.HasRows)
                     {
-                        command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.AddWithValue("@un", model.Un);
-                        command.Parameters.AddWithValue("@pwd", hashPwd);
-                        command.Parameters.AddWithValue("@uuid", HttpContext.Current.Session.SessionID);
-                        SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
+                        reader.Read();
+                        string userId = Convert.ToString(reader["f_id"]);
+                        string permission = Convert.ToString(reader["f_permission"]);
+
+                        UserSessionModel sessionInfo = new UserSessionModel
                         {
-                            Direction = ParameterDirection.Output
+                            CurrentUser = model.Un,
+                            CurrentPermission = permission,
+                            CurrentsessionID = HttpContext.Current.Session.SessionID,
                         };
-                        command.Parameters.Add(statusCodeParam);
 
-                        using (SqlDataAdapter adapter = new SqlDataAdapter(command))
-                        {
-                            DataTable dataTable = new DataTable();
-                            adapter.Fill(dataTable);
+                        HttpContext.Current.Session["userSessionInfo"] = sessionInfo;
 
-                            int statusCode = (int)statusCodeParam.Value;
-                            if (statusCode == 0 && dataTable.Rows.Count > 0)
-                            {
-                                string userId = Convert.ToString(dataTable.Rows[0]["f_id"]);
-                                string permission = Convert.ToString(dataTable.Rows[0]["f_permission"]);
+                        HttpCookie uuidCookie = new HttpCookie("uuid", HttpContext.Current.Session.SessionID);
+                        HttpCookie permissionCookie = new HttpCookie("permission", permission);
+                        HttpCookie currentUserCookie = new HttpCookie("currentUser", model.Un);
 
-                                UserSessionModel userSession = new UserSessionModel
-                                {
-                                    CurrentUser = model.Un,
-                                    CurrentPermission = permission
-                                };
+                        HttpContext.Current.Response.Cookies.Add(uuidCookie);
+                        HttpContext.Current.Response.Cookies.Add(permissionCookie);
+                        HttpContext.Current.Response.Cookies.Add(currentUserCookie);
 
-                                HttpContext.Current.Session["userSessionInfo"] = userSession;
-
-                                HttpCookie uuidCookie = new HttpCookie("uuid", HttpContext.Current.Session.SessionID);
-                                HttpCookie permissionCookie = new HttpCookie("permission", permission);
-                                HttpCookie currentUserCookie = new HttpCookie("currentUser", model.Un);
-
-                                HttpContext.Current.Response.Cookies.Add(uuidCookie);
-                                HttpContext.Current.Response.Cookies.Add(permissionCookie);
-                                HttpContext.Current.Response.Cookies.Add(currentUserCookie);
-
-                                return Ok(new { code = StatusResCode.Success });
-                            }
-                            else
-                            {
-                                return Ok(new { code = StatusResCode.Failed });
-                            }
-                        }
+                        return Ok(new { code = StatusResCode.Success });
                     }
-                }
-                catch (Exception ex)
-                {
-                    return InternalServerError(ex);
-                }
-                finally
-                {
-                    if (connection != null && connection.State == ConnectionState.Open)
+                    else
                     {
-                        connection.Close();
+                        return Ok(new { code = StatusResCode.Failed });
                     }
+                }
+                else
+                {
+                    return Ok(new { code = StatusResCode.Failed });
+                }
+            }
+            catch (Exception ex)
+            {
+                return InternalServerError(ex);
+            }
+            finally
+            {
+                if (connection != null && connection.State == ConnectionState.Open)
+                {
+                    connection.Close();
+                    command.Parameters.Clear();
+                }
+                if (reader != null)
+                {
+                    reader.Close();
                 }
             }
 
@@ -217,20 +243,15 @@ namespace backStage_vue3.Controllers
         [HttpPost, Route("api/user/add")]
         public async Task<IHttpActionResult> CreateUser(UserAddModel model)
         {
-
             var userSession = GetCurrentUserSession();
 
-            if (string.IsNullOrEmpty(sessionID) || userSession == null)
+            if (userSession == null)
             {
                 return StatusCode(HttpStatusCode.Unauthorized);
             }
 
             model.CurrentUser = userSession.CurrentUser;
-
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
+            model.CurrentsessionID = userSession.CurrentsessionID;
 
             string pattern = @"^[a-zA-Z0-9_-]{4,16}$";
 
@@ -242,6 +263,7 @@ namespace backStage_vue3.Controllers
             }
 
             SqlConnection connection = null;
+            SqlCommand command = null;
 
             string hashPwd = HashHelper.ComputeSha256Hash(model.Pwd);
 
@@ -249,47 +271,41 @@ namespace backStage_vue3.Controllers
             {
                 connection = new SqlConnection(SqlConfig.conStr);
                 connection.Open();
-
-                // 驗證 sessionID 是否與資料庫中的 f_uuid 匹配
-                using (SqlCommand checkCommand = new SqlCommand("pro_bs_getUuidByUn", connection))
+                command = new SqlCommand("pro_bs_addNewUser", connection)
                 {
-                    checkCommand.CommandType = CommandType.StoredProcedure;
-                    checkCommand.Parameters.AddWithValue("@currentUn", model.CurrentUser);
+                    CommandType = CommandType.StoredProcedure
+                };
+                command.CommandType = CommandType.StoredProcedure;
+                command.Parameters.AddWithValue("@currentUn", model.CurrentUser);
+                command.Parameters.AddWithValue("@currentSessionID", model.CurrentsessionID);
+                command.Parameters.AddWithValue("@un", model.Un);
+                command.Parameters.AddWithValue("@pwd", hashPwd);
+                command.Parameters.AddWithValue("@createTime", DateTime.Now);
+                command.Parameters.AddWithValue("@permission", model.Permission);
 
-                    var result = await checkCommand.ExecuteScalarAsync();
-                    if (result == null || result.ToString() != sessionID)
-                    {
-                        return StatusCode(HttpStatusCode.Unauthorized);
-                    }
+                SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
+                {
+                    Direction = ParameterDirection.Output
+                };
+                command.Parameters.Add(statusCodeParam);
+
+                await command.ExecuteNonQueryAsync();
+
+                int statusCode = (int)statusCodeParam.Value;
+
+                if (statusCode == 0)
+                {
+                    return Ok(new { code = StatusResCode.Success });
+                }
+                else if (statusCode == 5)
+                {
+                    return StatusCode(HttpStatusCode.Unauthorized);
+                }
+                else
+                {
+                    return Ok(new { code = StatusResCode.Failed });
                 }
 
-                // 繼續新增用戶
-                using (SqlCommand command = new SqlCommand("pro_bs_addNewUser", connection))
-                {
-                    command.CommandType = CommandType.StoredProcedure;
-                    command.Parameters.AddWithValue("@un", model.Un);
-                    command.Parameters.AddWithValue("@pwd", hashPwd);
-                    command.Parameters.AddWithValue("@createTime", DateTime.Now);
-                    command.Parameters.AddWithValue("@permission", model.Permission);
-
-                    SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
-                    {
-                        Direction = ParameterDirection.Output
-                    };
-                    command.Parameters.Add(statusCodeParam);
-
-                    await command.ExecuteNonQueryAsync();
-
-                    int statusCode = (int)statusCodeParam.Value;
-                    if (statusCode == 0)
-                    {
-                        return Ok(new { code = StatusResCode.Success });
-                    }
-                    else
-                    {
-                        return Ok(new { code = StatusResCode.Failed });
-                    }
-                }
             }
             catch (Exception ex)
             {
@@ -300,6 +316,7 @@ namespace backStage_vue3.Controllers
                 if (connection != null && connection.State == ConnectionState.Open)
                 {
                     connection.Close();
+                    command.Parameters.Clear();
                 }
             }
 
@@ -316,17 +333,13 @@ namespace backStage_vue3.Controllers
 
             var userSession = GetCurrentUserSession();
 
-            if (string.IsNullOrEmpty(sessionID) || userSession == null)
+            if (userSession == null)
             {
                 return StatusCode(HttpStatusCode.Unauthorized);
             }
 
             model.CurrentUser = userSession.CurrentUser;
-
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
+            model.CurrentsessionID = userSession.CurrentsessionID;
 
             if (model.CurrentUser == model.Un)
             {
@@ -334,49 +347,43 @@ namespace backStage_vue3.Controllers
             }
 
             SqlConnection connection = null;
+            SqlCommand command = null;
 
             try
             {
 
                 connection = new SqlConnection(SqlConfig.conStr);
                 connection.Open();
-                // 驗證 sessionID 是否與資料庫中的 f_uuid 匹配
-                using (SqlCommand checkCommand = new SqlCommand("pro_bs_getUuidByUn", connection))
+                command = new SqlCommand("pro_bs_delUser", connection)
                 {
-                    checkCommand.CommandType = CommandType.StoredProcedure;
-                    checkCommand.Parameters.AddWithValue("@currentUn", model.CurrentUser);
+                    CommandType = CommandType.StoredProcedure
+                };
+                command.CommandType = CommandType.StoredProcedure;
+                command.Parameters.AddWithValue("@currentUn", model.CurrentUser);
+                command.Parameters.AddWithValue("@currentSessionID", model.CurrentsessionID);
+                command.Parameters.AddWithValue("@un", model.Un);
 
-                    var result = await checkCommand.ExecuteScalarAsync();
-                    if (result == null || result.ToString() != sessionID)
-                    {
-                        return StatusCode(HttpStatusCode.Unauthorized);
-                    }
+                SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
+                {
+                    Direction = ParameterDirection.Output
+                };
+                command.Parameters.Add(statusCodeParam);
+
+                await command.ExecuteNonQueryAsync();
+
+                int statusCode = (int)statusCodeParam.Value;
+
+                if (statusCode == 0)
+                {
+                    return Ok(new { code = StatusResCode.Success });
                 }
-
-                // 刪除用戶
-                using (SqlCommand command = new SqlCommand("pro_bs_delUser", connection))
+                else if (statusCode == 5)
                 {
-                    command.CommandType = CommandType.StoredProcedure;
-                    command.Parameters.AddWithValue("@un", model.Un);
-                    command.Parameters.AddWithValue("@currentUn", model.CurrentUser);
-
-                    SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
-                    {
-                        Direction = ParameterDirection.Output
-                    };
-                    command.Parameters.Add(statusCodeParam);
-
-                    await command.ExecuteNonQueryAsync();
-
-                    int statusCode = (int)statusCodeParam.Value;
-                    if (statusCode == 0)
-                    {
-                        return Ok(new { code = StatusResCode.Success });
-                    }
-                    else
-                    {
-                        return Ok(new { code = StatusResCode.Failed });
-                    }
+                    return StatusCode(HttpStatusCode.Unauthorized);
+                }
+                else
+                {
+                    return Ok(new { code = StatusResCode.Failed });
                 }
             }
             catch (Exception ex)
@@ -389,6 +396,7 @@ namespace backStage_vue3.Controllers
                 if (connection != null && connection.State == ConnectionState.Open)
                 {
                     connection.Close();
+                    command.Parameters.Clear();
                 }
             }
 
@@ -405,17 +413,13 @@ namespace backStage_vue3.Controllers
 
             var userSession = GetCurrentUserSession();
 
-            if (string.IsNullOrEmpty(sessionID) || userSession == null)
+            if (userSession == null)
             {
                 return StatusCode(HttpStatusCode.Unauthorized);
             }
 
             model.CurrentUser = userSession.CurrentUser;
-
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
+            model.CurrentsessionID = userSession.CurrentsessionID;
 
             string pattern = @"^[a-zA-Z0-9_-]{4,16}$";
 
@@ -429,53 +433,47 @@ namespace backStage_vue3.Controllers
             string hashPwd = HashHelper.ComputeSha256Hash(model.Pwd);
 
             SqlConnection connection = null;
+            SqlCommand command = null;
 
             try
             {
                 connection = new SqlConnection(SqlConfig.conStr);
                 connection.Open();
-
-                // 驗證 sessionID 是否與資料庫中的 f_uuid 匹配
-                using (SqlCommand checkCommand = new SqlCommand("pro_bs_getUuidByUn", connection))
+                command = new SqlCommand("pro_bs_editUser", connection)
                 {
-                    checkCommand.CommandType = CommandType.StoredProcedure;
-                    checkCommand.Parameters.AddWithValue("@currentUn", model.CurrentUser);
+                    CommandType = CommandType.StoredProcedure
+                };
+                command.CommandType = CommandType.StoredProcedure;
+                command.Parameters.AddWithValue("@currentUn", model.CurrentUser);
+                command.Parameters.AddWithValue("@currentSessionID", model.CurrentsessionID);
+                command.Parameters.AddWithValue("@un", model.Un);
+                command.Parameters.AddWithValue("@newPwd", hashPwd);
+                command.Parameters.AddWithValue("@newPermission", model.Permission);
+                command.Parameters.AddWithValue("@updateTime", DateTime.Now);
 
-                    var result = await checkCommand.ExecuteScalarAsync();
-                    if (result == null || result.ToString() != sessionID)
-                    {
-                        return StatusCode(HttpStatusCode.Unauthorized);
-                    }
+                SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
+                {
+                    Direction = ParameterDirection.Output
+                };
+                command.Parameters.Add(statusCodeParam);
+
+                await command.ExecuteNonQueryAsync();
+
+                int statusCode = (int)statusCodeParam.Value;
+
+                if (statusCode == 0)
+                {
+                    return Ok(new { code = StatusResCode.Success });
+                }
+                else if (statusCode == 5)
+                {
+                    return StatusCode(HttpStatusCode.Unauthorized);
+                }
+                else
+                {
+                    return Ok(new { code = StatusResCode.Failed });
                 }
 
-                // 更新用戶
-                using (SqlCommand command = new SqlCommand("pro_bs_editUser", connection))
-                {
-                    command.CommandType = CommandType.StoredProcedure;
-                    command.Parameters.AddWithValue("@un", model.Un);
-                    command.Parameters.AddWithValue("@newPwd", hashPwd);
-                    command.Parameters.AddWithValue("@newPermission", model.Permission);
-                    command.Parameters.AddWithValue("@currentUn", model.CurrentUser);
-                    command.Parameters.AddWithValue("@updateTime", DateTime.Now);
-
-                    SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
-                    {
-                        Direction = ParameterDirection.Output
-                    };
-                    command.Parameters.Add(statusCodeParam);
-
-                    await command.ExecuteNonQueryAsync();
-
-                    int statusCode = (int)statusCodeParam.Value;
-                    if (statusCode == 0)
-                    {
-                        return Ok(new { code = StatusResCode.Success });
-                    }
-                    else
-                    {
-                        return Ok(new { code = StatusResCode.Failed });
-                    }
-                }
             }
             catch (Exception ex)
             {
