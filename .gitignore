@@ -257,3 +257,4 @@ _Pvt_Extensions
 # 忽略文件夹
 bin/
 obj/
+.vs/
