@@ -94,6 +94,7 @@ namespace backStage_vue3.Controllers
                     users.Add(user);
                 }
 
+                // 移到下一个结果集，獲取總數
                 await reader.NextResultAsync();
 
                 int totalRecords = 0;

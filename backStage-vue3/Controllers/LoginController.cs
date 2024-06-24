@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
 using System.Web.Http;
 using backStage_vue3.Models;
 using System.Data.SqlClient;
@@ -59,9 +56,11 @@ namespace backStage_vue3.Controllers
                 await command.ExecuteNonQueryAsync();
 
                 int statusCode = (int)statusCodeParam.Value;
+
                 if (statusCode == 0)
                 {
                     reader = await command.ExecuteReaderAsync();
+
                     if (reader.HasRows)
                     {
                         reader.Read();

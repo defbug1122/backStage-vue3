@@ -5,7 +5,7 @@
     @newPwd NVARCHAR(64),
     @newPermission NVARCHAR(50),
     @updateTime DATETIME,
-    @statusCode INT OUTPUT  -- 状态码输出参数
+    @statusCode INT OUTPUT
 AS
 BEGIN
     DECLARE @dbSessionID NVARCHAR(50);

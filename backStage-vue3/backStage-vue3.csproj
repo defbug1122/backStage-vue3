@@ -328,9 +328,7 @@
     <Content Include="Views\Home\Index.cshtml" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="ClientApp\" />
-    <Folder Include="Views\Login\" />
-    <Folder Include="Views\User\" />
+    <Folder Include="ShopClient\" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -370,8 +368,8 @@
     <Error Condition="!Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props'))" />
   </Target>
   <PropertyGroup>
-    <PreBuildEvent>echo Switching to ClientApp directory...
-cd "$(ProjectDir)ClientApp" || (echo "Failed to change directory to ClientApp" &amp;&amp; exit 1)
+    <PreBuildEvent>echo Switching to ShopClient directory...
+cd "$(ProjectDir)ShopClient" || (echo "Failed to change directory to ShopClient" &amp;&amp; exit 1)
 
 echo Running npm install...
 call npm install || (echo "npm install failed" &amp;&amp; exit 1)

@@ -15,7 +15,7 @@ BEGIN
     FROM [t_acc] WITH(NOLOCK)
     WHERE f_un = @un AND f_pwd = @pwd;
 
-    -- 如果該用戶，更新 UUID
+    -- 如果找到該用戶，更新 UUID
     IF @userId IS NOT NULL
     BEGIN
         UPDATE t_acc WITH(ROWLOCK)

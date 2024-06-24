@@ -7,7 +7,7 @@
     @statusCode INT OUTPUT
 AS
 BEGIN
-    SET NOCOUNT ON;
+    SET NOCOUNT ON; -- 禁止返回每個操作的影響行数的消息，提高性能
 
     DECLARE @dbSessionID NVARCHAR(50);
     DECLARE @startRow INT = (@pageNumber - 1) * @pageSize + 1;
@@ -24,7 +24,7 @@ BEGIN
         RETURN;
     END
 
-    -- 獲取用戶列表
+    -- 獲取用戶列表，先使用臨時結果集
     ;WITH UserCTE AS
     (
         SELECT 
