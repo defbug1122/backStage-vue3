@@ -14,6 +14,8 @@ namespace backStage_vue3.Controllers
 {
     public class UserController : BaseController
     {
+        string pattern = @"^[a-zA-Z0-9_-]{4,16}$";
+
         /// <summary>
         /// HTTP GET 取得用戶列表 API
         /// </summary>
@@ -31,6 +33,12 @@ namespace backStage_vue3.Controllers
             if (!checkPermission)
             {
                 return StatusCode(HttpStatusCode.Forbidden);
+            }
+
+            if (searchTerm != null && searchTerm.Length > 16)
+            {
+                result.Code = (int)StatusResCode.InvalidFormat;
+                return Ok(result);
             }
 
             SqlConnection connection = null;
@@ -121,8 +129,6 @@ namespace backStage_vue3.Controllers
             }
 
         }
-
-        string pattern = @"^[a-zA-Z0-9_-]{4,16}$";
 
         /// <summary>
         /// HTTP POST 新增用戶 API

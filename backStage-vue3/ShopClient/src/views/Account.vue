@@ -185,16 +185,16 @@ export default {
     },
 
     // 上一頁功能
-    handlePrevPage() {
+    handlePrevPage(searchTerm, sortBy) {
       if (this.pageNumber > 1) {
-        this.fetchUsers(this.searchTerm, this.pageNumber - 1, this.sortBy);
+        this.fetchUsers(searchTerm, this.pageNumber - 1, sortBy);
       }
     },
 
     // 下一頁功能
-    handleNextPage() {
+    handleNextPage(searchTerm, sortBy) {
       if (this.hasMore) {
-        this.fetchUsers(this.searchTerm, this.pageNumber + 1, this.sortBy);
+        this.fetchUsers(searchTerm, this.pageNumber + 1, sortBy);
       }
     },
 

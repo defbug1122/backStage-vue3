@@ -6,6 +6,7 @@
       @search="fetchMembers"
       :showSort="true"
       :sortOptions="sortOptions"
+      :sortBy="sortBy"
       :tableTitle="tableTitle"
       :tableData="members"
       :hasMore="hasMore"
@@ -133,22 +134,22 @@ export default {
     },
 
     // 上一頁功能
-    handlePrevPage() {
+    handlePrevPage(searchTerm, sortBy) {
       if (this.pageNumber > 1) {
-        this.fetchMembers(this.searchTerm, this.pageNumber - 1, this.sortBy);
+        this.fetchMembers(searchTerm, this.pageNumber - 1, sortBy);
       }
     },
 
     // 下一頁功能
-    handleNextPage() {
+    handleNextPage(searchTerm, sortBy) {
       if (this.hasMore) {
-        this.fetchMembers(this.searchTerm, this.pageNumber + 1, this.sortBy);
+        this.fetchMembers(searchTerm, this.pageNumber + 1, sortBy);
       }
     },
 
     // 會員等級名稱處理
     getLevelName(level) {
-      const foundLevel = this.levelMap.find((l) => l.value === level);
+      const foundLevel = this.levelMap.find((v) => v.value === level);
       return foundLevel ? foundLevel.label : "未知等級";
     },
 

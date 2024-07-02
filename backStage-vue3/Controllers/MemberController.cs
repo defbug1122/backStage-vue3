@@ -32,6 +32,12 @@ namespace backStage_vue3.Controllers
                 return StatusCode(HttpStatusCode.Forbidden);
             }
 
+            if (searchTerm != null && searchTerm.Length > 16)
+            {
+                result.Code = (int)StatusResCode.InvalidFormat;
+                return Ok(result);
+            }
+
             SqlConnection connection = null;
             SqlCommand command = null;
             SqlDataReader reader = null;

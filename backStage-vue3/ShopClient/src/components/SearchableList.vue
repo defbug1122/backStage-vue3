@@ -28,11 +28,17 @@
       </tbody>
     </table>
     <div class="pagination">
-      <el-button @click="$emit('prevPage')" :disabled="pageNumber === 1">
+      <el-button
+        @click="$emit('prevPage', localSearchTerm, localSortBy)"
+        :disabled="pageNumber === 1"
+      >
         上一頁
       </el-button>
       <span>第 {{ pageNumber }} 頁</span>
-      <el-button @click="$emit('nextPage')" :disabled="!hasMore">
+      <el-button
+        @click="$emit('nextPage', localSearchTerm, localSortBy)"
+        :disabled="!hasMore"
+      >
         下一頁
       </el-button>
     </div>
@@ -97,7 +103,15 @@ export default {
   methods: {
     // 查詢功能
     handleSearch() {
-      this.$emit("search", this.localSearchTerm, 1, this.localSortBy);
+      if (this.localSearchTerm.length < 16) {
+        this.$emit("search", this.localSearchTerm, 1, this.localSortBy);
+      } else {
+        this.$message({
+          message: "輸入太長了",
+          type: "error",
+          duration: 1200,
+        });
+      }
     },
   },
 };
