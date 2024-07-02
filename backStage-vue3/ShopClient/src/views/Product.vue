@@ -5,24 +5,18 @@
 </template>
 
 <script>
-import Menu from "../components/Menu.vue";
-
 export default {
   name: "Product",
-  components: {
-    Menu,
-  },
+  components: {},
   data() {
-    return {
-      menuList: [],
-    };
+    return {};
   },
   mounted() {
     this.fetchData();
   },
   methods: {
     async fetchData() {
-      console.log("df");
+      console.log("");
     },
   },
 };

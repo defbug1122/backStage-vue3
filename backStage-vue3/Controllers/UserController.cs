@@ -7,22 +7,13 @@ using backStage_vue3.Models;
 using System.Data.SqlClient;
 using System.Data;
 using System.Threading.Tasks;
-using System.Web;
 using backStage_vue3.Utilities;
+using System.Web;
 
 namespace backStage_vue3.Controllers
 {
-    public class UserController : ApiController
+    public class UserController : BaseController
     {
-        /// <summary>
-        /// 當前用戶Sessio資料
-        /// </summary>
-        /// <returns></returns>
-        private UserSessionModel GetCurrentUserSession()
-        {
-            return HttpContext.Current.Session["userSessionInfo"] as UserSessionModel;
-        }
-
         /// <summary>
         /// HTTP GET 取得用戶列表 API
         /// </summary>
@@ -33,15 +24,14 @@ namespace backStage_vue3.Controllers
         [HttpGet, Route("api/user/list")]
         public async Task<IHttpActionResult> GetUsers(string searchTerm = "", int pageNumber = 1, int pageSize = 10)
         {
-            var userSession = GetCurrentUserSession();
+            var result = new GetUserResponseDto();
 
-            if (userSession == null)
+            bool checkPermission = (UserSession.Permission & (int)Permissions.ViewAccount) == (int)Permissions.ViewAccount;
+
+            if (!checkPermission)
             {
-                return StatusCode(HttpStatusCode.Unauthorized);
+                return StatusCode(HttpStatusCode.Forbidden);
             }
-
-            string currentUn = userSession.CurrentUser;
-            string currentSessionID = userSession.CurrentsessionID;
 
             SqlConnection connection = null;
             SqlCommand command = null;
@@ -56,9 +46,9 @@ namespace backStage_vue3.Controllers
                     CommandType = CommandType.StoredProcedure
                 };
 
-                command.CommandType = CommandType.StoredProcedure;
-                command.Parameters.AddWithValue("@currentUn", currentUn);
-                command.Parameters.AddWithValue("@currentSessionID", currentSessionID);
+                //command.CommandType = CommandType.StoredProcedure;
+                command.Parameters.AddWithValue("@currentUn", UserSession.Un);
+                command.Parameters.AddWithValue("@currentSessionID", UserSession.SessionID);
                 command.Parameters.AddWithValue("@searchTerm", searchTerm);
                 command.Parameters.AddWithValue("@pageNumber", pageNumber);
                 command.Parameters.AddWithValue("@pageSize", pageSize);
@@ -81,15 +71,15 @@ namespace backStage_vue3.Controllers
                 reader = await command.ExecuteReaderAsync();
 
                 List<UserModel> users = new List<UserModel>();
-
+               
                 while (await reader.ReadAsync())
                 {
                     UserModel user = new UserModel
                     {
                         Id = Convert.ToInt32(reader["f_id"]),
                         Un = reader["f_un"].ToString(),
-                        CreateTime = reader["f_createTime"] != DBNull.Value ? Convert.ToDateTime(reader["f_createTime"]) : DateTime.MinValue,
-                        Permission = reader["f_Permission"].ToString(),
+                        CreateTime = Convert.ToDateTime(reader["f_createTime"]).ToString("yyyy-MM-dd"),
+                        Permission = Convert.ToInt32(reader["f_permission"]),
                     };
                     users.Add(user);
                 }
@@ -104,17 +94,13 @@ namespace backStage_vue3.Controllers
                     totalRecords = Convert.ToInt32(reader["TotalRecords"]);
                 }
 
-                var lowercaseUsers = users.Select(u => new
-                {
-                    id = u.Id,
-                    un = u.Un.ToLower(),
-                    createTime = u.CreateTime?.ToString("yyyy-MM-dd"),
-                    permission = u.Permission
-                });
-
                 bool hasMore = (pageNumber * pageSize) < totalRecords;
 
-                return Ok(new { code = StatusResCode.Success, data = lowercaseUsers, hasMore = hasMore });
+                result.Code = (int)StatusResCode.Success;
+                result.Data = users;
+                result.HasMore = hasMore;
+
+                return Ok(result);
             }
             catch (Exception ex)
             {
@@ -135,6 +121,8 @@ namespace backStage_vue3.Controllers
 
         }
 
+        string pattern = @"^[a-zA-Z0-9_-]{4,16}$";
+
         /// <summary>
         /// HTTP POST 新增用戶 API
         /// </summary>
@@ -143,29 +131,25 @@ namespace backStage_vue3.Controllers
         [HttpPost, Route("api/user/add")]
         public async Task<IHttpActionResult> CreateUser(UserAddModel model)
         {
-            var userSession = GetCurrentUserSession();
+            bool checkPermission = (UserSession.Permission & (int)Permissions.AddAccount) == (int)Permissions.AddAccount;
 
-            if (userSession == null)
+            if (!checkPermission)
             {
-                return StatusCode(HttpStatusCode.Unauthorized);
+                return StatusCode(HttpStatusCode.Forbidden);
             }
 
-            model.CurrentUser = userSession.CurrentUser;
-            model.CurrentsessionID = userSession.CurrentsessionID;
-
-            string pattern = @"^[a-zA-Z0-9_-]{4,16}$";
+            var result = new AddUserResponseDto();
 
             if (
                 !System.Text.RegularExpressions.Regex.IsMatch(model.Un, pattern) ||
                 !System.Text.RegularExpressions.Regex.IsMatch(model.Pwd, pattern))
             {
-                return Ok(new { code = StatusResCode.InvalidFormat });
+                result.Code = (int)StatusResCode.InvalidFormat;
+                return Ok(result);
             }
 
             SqlConnection connection = null;
             SqlCommand command = null;
-
-            string hashPwd = HashHelper.ComputeSha256Hash(model.Pwd);
 
             try
             {
@@ -175,11 +159,11 @@ namespace backStage_vue3.Controllers
                 {
                     CommandType = CommandType.StoredProcedure
                 };
-                command.CommandType = CommandType.StoredProcedure;
-                command.Parameters.AddWithValue("@currentUn", model.CurrentUser);
-                command.Parameters.AddWithValue("@currentSessionID", model.CurrentsessionID);
+                //command.CommandType = CommandType.StoredProcedure;
+                command.Parameters.AddWithValue("@currentUn", UserSession.Un);
+                command.Parameters.AddWithValue("@currentSessionID", UserSession.SessionID);
                 command.Parameters.AddWithValue("@un", model.Un);
-                command.Parameters.AddWithValue("@pwd", hashPwd);
+                command.Parameters.AddWithValue("@pwd", HashHelper.ComputeSha256Hash(model.Pwd));
                 command.Parameters.AddWithValue("@createTime", DateTime.Now);
                 command.Parameters.AddWithValue("@permission", model.Permission);
 
@@ -195,7 +179,8 @@ namespace backStage_vue3.Controllers
 
                 if (statusCode == 0)
                 {
-                    return Ok(new { code = StatusResCode.Success });
+                    result.Code = (int)StatusResCode.Success;
+                    return Ok(result);
                 }
                 else if (statusCode == 5)
                 {
@@ -203,7 +188,8 @@ namespace backStage_vue3.Controllers
                 }
                 else
                 {
-                    return Ok(new { code = StatusResCode.Failed });
+                    result.Code = (int)StatusResCode.Failed;
+                    return Ok(result);
                 }
 
             }
@@ -231,19 +217,19 @@ namespace backStage_vue3.Controllers
         public async Task<IHttpActionResult> DeleteUser(UserDeleteModel model)
         {
 
-            var userSession = GetCurrentUserSession();
+            bool checkPermission = (UserSession.Permission & (int)Permissions.DeleteAccount) == (int)Permissions.DeleteAccount;
 
-            if (userSession == null)
+            if (!checkPermission)
             {
-                return StatusCode(HttpStatusCode.Unauthorized);
+                return StatusCode(HttpStatusCode.Forbidden);
             }
 
-            model.CurrentUser = userSession.CurrentUser;
-            model.CurrentsessionID = userSession.CurrentsessionID;
+            var result = new DeleteUserResponseDto();
 
-            if (model.CurrentUser == model.Un)
+            if (UserSession.Un == model.Un)
             {
-                return Ok(new { code = StatusResCode.DeleteMyself });
+                result.Code = (int)StatusResCode.DeleteMyself;
+                return Ok(result);
             }
 
             SqlConnection connection = null;
@@ -258,9 +244,9 @@ namespace backStage_vue3.Controllers
                 {
                     CommandType = CommandType.StoredProcedure
                 };
-                command.CommandType = CommandType.StoredProcedure;
-                command.Parameters.AddWithValue("@currentUn", model.CurrentUser);
-                command.Parameters.AddWithValue("@currentSessionID", model.CurrentsessionID);
+                //command.CommandType = CommandType.StoredProcedure;
+                command.Parameters.AddWithValue("@currentUn", UserSession.Un);
+                command.Parameters.AddWithValue("@currentSessionID", UserSession.SessionID);
                 command.Parameters.AddWithValue("@un", model.Un);
 
                 SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
@@ -275,7 +261,8 @@ namespace backStage_vue3.Controllers
 
                 if (statusCode == 0)
                 {
-                    return Ok(new { code = StatusResCode.Success });
+                    result.Code = (int)StatusResCode.Success;
+                    return Ok(result);
                 }
                 else if (statusCode == 5)
                 {
@@ -283,7 +270,8 @@ namespace backStage_vue3.Controllers
                 }
                 else
                 {
-                    return Ok(new { code = StatusResCode.Failed });
+                    result.Code = (int)StatusResCode.Failed;
+                    return Ok(result);
                 }
             }
             catch (Exception ex)
@@ -310,27 +298,22 @@ namespace backStage_vue3.Controllers
         [HttpPost, Route("api/user/update")]
         public async Task<IHttpActionResult> EditUser(UserUpdateModel model)
         {
+            bool checkPermission = (UserSession.Permission & (int)Permissions.EditAccount) == (int)Permissions.EditAccount;
 
-            var userSession = GetCurrentUserSession();
-
-            if (userSession == null)
+            if (!checkPermission)
             {
-                return StatusCode(HttpStatusCode.Unauthorized);
+                return StatusCode(HttpStatusCode.Forbidden);
             }
 
-            model.CurrentUser = userSession.CurrentUser;
-            model.CurrentsessionID = userSession.CurrentsessionID;
-
-            string pattern = @"^[a-zA-Z0-9_-]{4,16}$";
+            var result = new UpdateUserResponseDto();
 
             if (
                 !System.Text.RegularExpressions.Regex.IsMatch(model.Un, pattern) ||
                 !System.Text.RegularExpressions.Regex.IsMatch(model.Pwd, pattern))
             {
-                return Ok(new { code = StatusResCode.InvalidFormat });
+                result.Code = (int)StatusResCode.InvalidFormat;
+                return Ok(result);
             }
-
-            string hashPwd = HashHelper.ComputeSha256Hash(model.Pwd);
 
             SqlConnection connection = null;
             SqlCommand command = null;
@@ -343,11 +326,11 @@ namespace backStage_vue3.Controllers
                 {
                     CommandType = CommandType.StoredProcedure
                 };
-                command.CommandType = CommandType.StoredProcedure;
-                command.Parameters.AddWithValue("@currentUn", model.CurrentUser);
-                command.Parameters.AddWithValue("@currentSessionID", model.CurrentsessionID);
+                //command.CommandType = CommandType.StoredProcedure;
+                command.Parameters.AddWithValue("@currentUn", UserSession.Un);
+                command.Parameters.AddWithValue("@currentSessionID", UserSession.SessionID);
                 command.Parameters.AddWithValue("@un", model.Un);
-                command.Parameters.AddWithValue("@newPwd", hashPwd);
+                command.Parameters.AddWithValue("@newPwd", HashHelper.ComputeSha256Hash(model.Pwd));
                 command.Parameters.AddWithValue("@newPermission", model.Permission);
                 command.Parameters.AddWithValue("@updateTime", DateTime.Now);
 
@@ -363,7 +346,8 @@ namespace backStage_vue3.Controllers
 
                 if (statusCode == 0)
                 {
-                    return Ok(new { code = StatusResCode.Success });
+                    result.Code = (int)StatusResCode.Success;
+                    return Ok(result);
                 }
                 else if (statusCode == 5)
                 {
@@ -371,7 +355,8 @@ namespace backStage_vue3.Controllers
                 }
                 else
                 {
-                    return Ok(new { code = StatusResCode.Failed });
+                    result.Code = (int)StatusResCode.Failed;
+                    return Ok(result);
                 }
 
             }
@@ -387,6 +372,97 @@ namespace backStage_vue3.Controllers
                 }
             }
 
+        }
+
+        /// <summary>
+        /// HTTP POST 用户登出 API
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
+        [HttpPost, Route("api/user/logout")]
+        public async Task<IHttpActionResult> Logout()
+        {
+            var result = new UserLogoutResponseDto();
+
+            SqlConnection connection = null;
+            SqlCommand command = null;
+
+            try
+            {
+                connection = new SqlConnection(SqlConfig.conStr);
+                await connection.OpenAsync();
+
+                command = new SqlCommand("pro_bs_getUserLogout", connection)
+                {
+                    CommandType = CommandType.StoredProcedure
+                };
+                command.Parameters.AddWithValue("@un",UserSession.Un);
+                SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
+                {
+                    Direction = ParameterDirection.Output
+                };
+                command.Parameters.Add(statusCodeParam);
+
+                await command.ExecuteNonQueryAsync();
+                int statusCode = (int)statusCodeParam.Value;
+
+                if (statusCode == 0)
+                {
+                    // 清理Session的值
+                    HttpContext.Current.Session.Clear();
+
+                    // 終止當前會話
+                    HttpContext.Current.Session.Abandon();
+
+                    // 創新的Cookies將其設為過期，瀏覽器接收到是過期的，便會清理該對應 Cookies
+                    if (HttpContext.Current.Request.Cookies["uuid"] != null)
+                    {
+                        var uuidCookie = new HttpCookie("uuid")
+                        {
+                            Expires = DateTime.Now.AddDays(-1)
+                        };
+                        HttpContext.Current.Response.Cookies.Add(uuidCookie);
+                    }
+
+                    if (HttpContext.Current.Request.Cookies["permission"] != null)
+                    {
+                        var permissionCookie = new HttpCookie("permission")
+                        {
+                            Expires = DateTime.Now.AddDays(-1)
+                        };
+                        HttpContext.Current.Response.Cookies.Add(permissionCookie);
+                    }
+
+                    if (HttpContext.Current.Request.Cookies["currentUser"] != null)
+                    {
+                        var currentUserCookie = new HttpCookie("currentUser")
+                        {
+                            Expires = DateTime.Now.AddDays(-1)
+                        };
+                        HttpContext.Current.Response.Cookies.Add(currentUserCookie);
+                    }
+
+                    result.Code = (int)StatusResCode.Success;
+                    return Ok(result);
+                } else
+                {
+                    result.Code = (int)StatusResCode.Failed;
+                    return Ok(result);
+                }
+            }
+            catch (Exception ex)
+            {
+                return InternalServerError(ex);
+            }
+            finally
+            {
+
+                if (connection != null && connection.State == ConnectionState.Open)
+                {
+                    connection.Close();
+                    command.Parameters.Clear();
+                }
+            }
         }
     }
 }

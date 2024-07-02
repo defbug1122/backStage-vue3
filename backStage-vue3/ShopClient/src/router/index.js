@@ -1,11 +1,12 @@
 import Vue from "vue";
 import Router from "vue-router";
-import Home from "../views/Home.vue";
-import Login from "../views/Login.vue";
-import Account from "../views/Account.vue";
-import Member from "../views/Member.vue";
-import Order from "../views/Order.vue";
-import Product from "../views/Product.vue";
+import Home from "@/views/Home.vue";
+import Login from "@/views/Login.vue";
+import Account from "@/views/Account.vue";
+import Member from "@/views/Member.vue";
+import Order from "@/views/Order.vue";
+import Product from "@/views/Product.vue";
+import NotFound from "@/views/NotFound.vue";
 
 Vue.use(Router);
 
@@ -39,6 +40,11 @@ const routes = [
     path: "/product",
     name: "Product",
     component: Product,
+  },
+  {
+    path: "/notFound",
+    name: "NotFound",
+    component: NotFound,
   },
 ];
 

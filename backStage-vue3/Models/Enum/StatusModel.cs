@@ -39,5 +39,20 @@ namespace backStage_vue3.Models
         /// 當前登入用戶SessionId與資料庫不匹配
         /// </summary>
         UnMatchSessionId = 5,
+
+        /// <summary>
+        /// 權限不足
+        /// </summary>
+        PermissionDenied = 6,
+
+        /// <summary>
+        /// 資料庫無該會員資料
+        /// </summary>
+        NotFoundMember = 7,
+
+        /// <summary>
+        /// 用戶不存在
+        /// </summary>
+        NotFoundUser = 8
     }
 }

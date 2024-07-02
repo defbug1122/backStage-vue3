@@ -1,17 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using Newtonsoft.Json.Serialization;
 using System.Web.Http;
 
 namespace backStage_vue3
 {
+    /// <summary>
+    /// Web API 相關配置
+    /// </summary>
     public static class WebApiConfig
     {
         public static void Register(HttpConfiguration config)
         {
-            // Web API 設定和服務
+            // JSON 格式開頭第一個英文字母轉化為小寫
+            var jsonFormatter = config.Formatters.JsonFormatter;
+            jsonFormatter.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
 
-            // Web API 路由
+            // Web API 路由配置
             config.MapHttpAttributeRoutes();
 
             config.Routes.MapHttpRoute(

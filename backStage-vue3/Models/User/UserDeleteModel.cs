@@ -3,7 +3,7 @@
     /// <summary>
     /// 刪除用戶POST 請求相關參數
     /// </summary>
-    public class UserDeleteModel : UserSessionModel
+    public class UserDeleteModel
     {
         /// <summary>
         /// 刪除用戶POST-請求參數-用戶名稱

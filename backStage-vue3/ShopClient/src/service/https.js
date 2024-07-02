@@ -30,9 +30,15 @@ instance.interceptors.response.use(
     if (error.response.status === 401) {
       sessionStorage.removeItem("token");
       sessionStorage.removeItem("role");
-      alert("重新登入");
+      alert("身分驗證失敗，重新登入");
       router.push("/login");
-      console.log("重新登入");
+      console.log("身分驗證失敗，重新登入");
+    } else if (error.response.status === 403) {
+      alert("權限不足，無法操作");
+      console.log("權限不足，無法操作");
+    } else if (error.response.status === 404) {
+      router.push("/notFound");
+      console.log("找不到頁面");
     } else if (error.response.status === 500) {
       alert("目前維修中，請聯繫系統管理員");
       console.log("請稍後再試");

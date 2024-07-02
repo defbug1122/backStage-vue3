@@ -1,27 +1,58 @@
 <template>
-  <div>
-    <div class="user-info">
-      用戶: {{ currentUser.un }}
-      <el-button type="primary" @click="openEditModal(currentUser)"
-        >編輯</el-button
-      >
-      <el-button type="primary" @click="logout">登出</el-button>
-    </div>
-    <div class="acc-search-bar">
-      <SearchBar :searchTerm="searchTerm" @search="fetchUsers" />
-      <el-button @click="openCreateModal">新增</el-button>
-    </div>
-    <List
+  <div class="acc-container">
+    <UserInfo />
+    <SearchableList
+      :searchTerm="searchTerm"
+      @search="fetchUsers"
+      :showSort="false"
       :tableTitle="tableTitle"
-      :users="users"
+      :tableData="users"
       :hasMore="hasMore"
       :pageNumber="pageNumber"
       :pageSize="pageSize"
-      @edit="openEditModal"
-      @delete="deleteUser"
+      :showAddButton="canAddUser()"
       @prevPage="handlePrevPage"
       @nextPage="handleNextPage"
-    />
+      @add="openCreateModal"
+    >
+      <template #table-rows="{ tableData }">
+        <tr v-for="item in tableData" :key="item.id">
+          <td>{{ item.un }}</td>
+          <td>{{ getPermissionLabels(item.permission) }}</td>
+          <td>{{ item.createTime }}</td>
+          <td>
+            <el-button v-if="canEditUser(item)" @click="openEditModal(item)"
+              >編輯</el-button
+            >
+            <el-popover
+              v-if="canDeleteUser(item)"
+              placement="top"
+              width="160"
+              trigger="click"
+              :key="item.un"
+              v-model="popoversVisible[item.un]"
+            >
+              <p>確認刪除此用戶？</p>
+              <div class="btn-group" style="text-align: right">
+                <el-button
+                  size="mini"
+                  type="text"
+                  @click="popoversVisible[item.un] = false"
+                  >取消</el-button
+                >
+                <el-button
+                  type="primary"
+                  size="mini"
+                  @click="deleteUser(item.un)"
+                  >確認</el-button
+                >
+              </div>
+              <el-button slot="reference" type="danger">刪除</el-button>
+            </el-popover>
+          </td>
+        </tr>
+      </template>
+    </SearchableList>
     <UserModel
       :showModal="showModal"
       :isEditMode="isEditMode"
@@ -33,26 +64,30 @@
 </template>
 
 <script>
-import { getUserList, createAcc, deleteAcc, editAcc } from "@/service/api";
-import SearchBar from "@/components/SearchBar.vue";
+import {
+  getUserList,
+  createAcc,
+  deleteAcc,
+  editAcc,
+  logout,
+} from "@/service/api";
+import SearchableList from "@/components/SearchableList.vue";
 import UserModel from "@/components/UserModel.vue";
-import List from "@/components/List.vue";
+import UserInfo from "@/components/UserInfo.vue";
 import { store, mutations } from "@/store";
 
 export default {
   name: "Account",
   components: {
-    SearchBar,
+    SearchableList,
     UserModel,
-    List,
+    UserInfo,
   },
   data() {
     return {
       tableTitle: ["帳號", "權限", "創立時間", "操作"],
-      currentUser: {
-        un: store.currentUser.un,
-        permission: store.currentUser.role,
-      },
+      currentUser: store.currentUser.un,
+      role: store.currentUser.role,
       searchTerm: "",
       users: [],
       showModal: false,
@@ -66,25 +101,50 @@ export default {
       pageNumber: 1,
       pageSize: 10,
       pattern: /^[a-zA-Z0-9_-]{4,16}$/,
+      popoversVisible: {},
+      permissionMap: store.permissionMap,
     };
   },
   methods: {
-    // 登出
-    logout() {
-      mutations.setUserInfo({
-        user: "",
-        role: "",
-        token: "",
-      });
-      sessionStorage.removeItem("token");
-      sessionStorage.removeItem("currentUser");
-      sessionStorage.removeItem("role");
-      this.$router.push("/login");
-      this.$message({
-        message: "登出成功",
-        type: "success",
-        duration: 1200,
-      });
+    // 是否有新增用戶權限
+    canAddUser() {
+      return (this.role & 2) === 2;
+    },
+
+    // 呼叫登出 API
+    async logout() {
+      try {
+        const response = await logout();
+        if (response.data.code === 0) {
+          this.$message({
+            message: "登出成功",
+            type: "success",
+            duration: 1200,
+          });
+          // 清理相關資料
+          sessionStorage.removeItem("token");
+          sessionStorage.removeItem("currentUser");
+          sessionStorage.removeItem("role");
+          mutations.setUserInfo({
+            user: "",
+            role: "",
+            token: "",
+          });
+          this.$router.push("/login");
+        } else {
+          this.$message({
+            message: "登出失败",
+            type: "error",
+            duration: 1200,
+          });
+        }
+      } catch (error) {
+        this.$message({
+          message: "登出请求失败",
+          type: "error",
+          duration: 1200,
+        });
+      }
     },
 
     // 取得用戶列表
@@ -122,6 +182,7 @@ export default {
 
     // 打開"新增用戶"彈窗
     openCreateModal() {
+      console.log("打開新增談窗---");
       this.resetUser();
       this.isEditMode = false;
       this.showModal = true;
@@ -243,7 +304,7 @@ export default {
           });
         } else {
           this.$message({
-            message: "用戶更新失敗222",
+            message: "用戶更新失敗",
             type: "error",
             duration: 1200,
           });
@@ -285,6 +346,49 @@ export default {
         });
       }
     },
+
+    // 確認刪除用戶
+    confirmDelete(un) {
+      this.$emit("delete", un);
+    },
+
+    // 判斷是否能編輯用戶
+    canEditUser(item) {
+      const itemPermission = item.permission;
+      // if (itemPermission === 16383) {
+      //   return false;
+      // }
+      if (this.role === 16383 || (this.role & 4) === 4) {
+        return true;
+      }
+      return false;
+    },
+
+    // 判斷是否能刪除用戶
+    canDeleteUser(item) {
+      const itemPermission = item.permission;
+      if (item.un === this.currentUser) {
+        return false;
+      }
+      if (itemPermission === 16383) {
+        return false;
+      }
+      if ((this.role & 2) === 2) {
+        return true;
+      }
+      return false;
+    },
+
+    // 獲取權限標籤
+    getPermissionLabels(permission) {
+      let labels = [];
+      for (let key in this.permissionMap) {
+        if (permission & key) {
+          labels.push(this.permissionMap[key]);
+        }
+      }
+      return labels.join(", ");
+    },
   },
   created() {
     this.fetchUsers();
@@ -296,10 +400,5 @@ export default {
 .acc-search-bar {
   display: flex;
   justify-content: center;
-}
-.user-info {
-  display: flex;
-  justify-content: end;
-  align-items: center;
 }
 </style>

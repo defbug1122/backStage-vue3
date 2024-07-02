@@ -22,7 +22,7 @@ export default {
   },
   methods: {
     async fetchData() {
-      console.log("df");
+      console.log("");
     },
   },
 };

@@ -1,11 +1,9 @@
-﻿using System;
-
-namespace backStage_vue3.Models
+﻿namespace backStage_vue3.Models
 {
-    /// <summary>
+    // <summary>
     /// 用戶列表資訊
     /// </summary>
-    public class UserModel : UserSessionModel
+    public class UserModel
     {
         /// <summary>
         /// 用戶列表-索引鍵
@@ -13,23 +11,18 @@ namespace backStage_vue3.Models
         public int Id { get; set; }
 
         /// <summary>
-        /// 用戶列表-用戶名
+        /// 用戶列表-用戶名稱
         /// </summary>
         public string Un { get; set; }
 
         /// <summary>
-        /// 用戶列表-用戶密碼
-        /// </summary>
-        public string Pwd { get; set; }
-
-        /// <summary>
         /// 用戶列表-用戶創立時間
         /// </summary>
-        public DateTime? CreateTime { get; set; }
+        public string CreateTime { get; set; }
 
         /// <summary>
         /// 用戶列表-用戶當前權限
         /// </summary>
-        public string Permission { get; set; }
+        public int Permission { get; set; }
     }
 }

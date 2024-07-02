@@ -295,16 +295,32 @@
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="App_Start\WebApiConfig.cs" />
     <Compile Include="App_Data\SqlConfig.cs" />
+    <Compile Include="Controllers\BaseController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\LoginController.cs" />
+    <Compile Include="Controllers\MemberController.cs" />
     <Compile Include="Controllers\UserController.cs" />
+    <Compile Include="Filter\SessionAuthorizationFilter.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
-    <Compile Include="Models\StatusModel.cs" />
+    <Compile Include="Models\Enum\PermissionModel.cs" />
+    <Compile Include="Models\Member\GetMemberResponseDto.cs" />
+    <Compile Include="Models\Member\MemberModel.cs" />
+    <Compile Include="Models\Enum\StatusModel.cs" />
+    <Compile Include="Models\Member\UpdateLevelModel.cs" />
+    <Compile Include="Models\Member\UpdateLevelResponseDto.cs" />
+    <Compile Include="Models\Member\UpdateStatusModel.cs" />
+    <Compile Include="Models\Member\UpdateStatusResponseDto.cs" />
+    <Compile Include="Models\User\AddUserResponseDto.cs" />
+    <Compile Include="Models\User\DeleteUserResponseDto.cs" />
+    <Compile Include="Models\User\GetUserResponseDto.cs" />
+    <Compile Include="Models\User\UpdateUserResponseDto.cs" />
     <Compile Include="Models\User\UserAddModel.cs" />
     <Compile Include="Models\User\UserDeleteModel.cs" />
     <Compile Include="Models\User\UserLoginModel.cs" />
+    <Compile Include="Models\User\UserLoginResponseDto.cs" />
+    <Compile Include="Models\User\UserLogoutResponseDto.cs" />
     <Compile Include="Models\User\UserModel.cs" />
     <Compile Include="Models\User\UserSessionModel.cs" />
     <Compile Include="Models\User\UserUpdateModel.cs" />

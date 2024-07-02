@@ -11,7 +11,6 @@ namespace backStage_vue3.Controllers
 {
     public class LoginController : ApiController
     {
-        // GET: Login
         /// <summary>
         /// HTTP POST 用户登入 API
         /// </summary>
@@ -20,13 +19,15 @@ namespace backStage_vue3.Controllers
         [HttpPost, Route("api/user/login")]
         public async Task<IHttpActionResult> Login(UserLoginModel model)
         {
+            var result = new UserLoginResponseDto();
 
             string pattern = @"^[a-zA-Z0-9_-]{4,16}$";
 
             if (!System.Text.RegularExpressions.Regex.IsMatch(model.Un, pattern) ||
                 !System.Text.RegularExpressions.Regex.IsMatch(model.Pwd, pattern))
             {
-                return Ok(new { code = StatusResCode.InvalidFormat });
+                result.Code = (int)StatusResCode.InvalidFormat;
+                return Ok(result);
             }
 
             string hashPwd = HashHelper.ComputeSha256Hash(model.Pwd);
@@ -56,6 +57,7 @@ namespace backStage_vue3.Controllers
                 await command.ExecuteNonQueryAsync();
 
                 int statusCode = (int)statusCodeParam.Value;
+                string Id = HttpContext.Current.Session.SessionID;
 
                 if (statusCode == 0)
                 {
@@ -65,13 +67,13 @@ namespace backStage_vue3.Controllers
                     {
                         reader.Read();
                         string userId = Convert.ToString(reader["f_id"]);
-                        string permission = Convert.ToString(reader["f_permission"]);
+                        string permission = reader["f_permission"].ToString();
 
                         UserSessionModel sessionInfo = new UserSessionModel
                         {
-                            CurrentUser = model.Un,
-                            CurrentPermission = permission,
-                            CurrentsessionID = HttpContext.Current.Session.SessionID,
+                            Un = model.Un,
+                            Permission = Convert.ToInt32(reader["f_permission"]),
+                            SessionID = HttpContext.Current.Session.SessionID,
                         };
 
                         HttpContext.Current.Session["userSessionInfo"] = sessionInfo;
@@ -84,16 +86,20 @@ namespace backStage_vue3.Controllers
                         HttpContext.Current.Response.Cookies.Add(permissionCookie);
                         HttpContext.Current.Response.Cookies.Add(currentUserCookie);
 
-                        return Ok(new { code = StatusResCode.Success });
+                        result.Code = (int)StatusResCode.Success;
+                        return Ok(result);
                     }
                     else
                     {
-                        return Ok(new { code = StatusResCode.Failed });
+                        result.Code = (int)StatusResCode.Failed;
+                        return Ok(result);
                     }
                 }
                 else
                 {
-                    return Ok(new { code = StatusResCode.Failed });
+
+                    result.Code = (int)StatusResCode.Failed;
+                    return Ok(result);
                 }
             }
             catch (Exception ex)
@@ -112,7 +118,6 @@ namespace backStage_vue3.Controllers
                     reader.Close();
                 }
             }
-
         }
     }
 }

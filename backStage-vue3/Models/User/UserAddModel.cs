@@ -5,7 +5,7 @@ namespace backStage_vue3.Models
     /// <summary>
     /// 新增用戶POST 請求相關參數
     /// </summary>
-    public class UserAddModel : UserSessionModel
+    public class UserAddModel
     {
         /// <summary>
         /// 新增用戶POST-請求參數-用戶名稱
@@ -25,6 +25,6 @@ namespace backStage_vue3.Models
         /// <summary>
         /// 新增用戶POST-請求參數-用戶權限
         /// </summary>
-        public string Permission { get; set; }
+        public int Permission { get; set; }
     }
 }

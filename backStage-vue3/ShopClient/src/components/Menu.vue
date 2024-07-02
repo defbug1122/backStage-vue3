@@ -15,50 +15,64 @@
 </template>
 
 <script>
+import { store } from "@/store";
+
 export default {
   name: "Menu",
   data() {
     return {
       currentRoute: this.$route.path,
-      userRole: "",
       menuOptions: [],
-      menuLoginList: [
-        {
-          role: ["1", "2"],
-          items: [
-            { name: "帳號系統", path: "/account", key: "1" },
-            { name: "會員系統", path: "/member", key: "2" },
-            { name: "商品系統", path: "/product", key: "3" },
-            { name: "訂單系統", path: "/order", key: "4" },
-          ],
+      menuLoginList: {
+        account: {
+          name: "帳號系統",
+          path: "/account",
+          key: "1",
+          permission: [1, 2, 4, 8],
         },
-        {
-          role: ["3", "4"],
-          items: [{ name: "會員系統", path: "/member", key: "2" }],
+        member: {
+          name: "會員系統",
+          path: "/member",
+          key: "2",
+          permission: [16, 32, 64],
         },
-        {
-          role: ["5", "6"],
-          items: [{ name: "商品系統", path: "/product", key: "3" }],
+        product: {
+          name: "商品系統",
+          path: "/product",
+          key: "3",
+          permission: [128, 256, 512, 1024],
         },
-        {
-          role: ["7", "8"],
-          items: [{ name: "訂單系統", path: "/order", key: "4" }],
+        order: {
+          name: "訂單系統",
+          path: "/order",
+          key: "4",
+          permission: [2048, 4096, 8192],
         },
-      ],
+      },
     };
   },
   created() {
     const token = sessionStorage.getItem("token");
     const role = sessionStorage.getItem("role");
+
     if (role && token) {
-      this.userRole = role;
-      const menu = this.menuLoginList.find((menu) => menu.role.includes(role));
-      if (menu) {
-        this.menuOptions = menu.items;
-      }
+      const permissions = parseInt(role, 10);
+      this.generateMenuOptions(permissions);
     }
   },
   methods: {
+    generateMenuOptions(permissions) {
+      const menuOptions = [];
+
+      for (const key in this.menuLoginList) {
+        const menu = this.menuLoginList[key];
+        if (menu.permission.some((p) => permissions & p)) {
+          menuOptions.push(menu);
+        }
+      }
+
+      this.menuOptions = menuOptions;
+    },
     handleMenuClick(path) {
       this.$router.push(path);
     },

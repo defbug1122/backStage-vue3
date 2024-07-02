@@ -43,6 +43,8 @@ export default {
       }
       return "";
     },
+
+    // 呼叫登入API
     async login() {
       if (this.un === "" || this.pwd === "") {
         this.errorMsg = "請輸入帳號、密碼";
@@ -77,15 +79,37 @@ export default {
             role: role,
             token: token,
           });
-          if (role === "1" || role === "2") {
+
+          const permissions = parseInt(role, 10);
+
+          if (
+            (permissions & 1) === 1 ||
+            (permissions & 2) === 2 ||
+            (permissions & 4) === 4 ||
+            (permissions & 8) === 8
+          ) {
             this.$router.push("/account");
-          } else if (role === "3" || role === "4") {
+          } else if (
+            (permissions & 16) === 16 ||
+            (permissions & 32) === 32 ||
+            (permissions & 64) === 64
+          ) {
             this.$router.push("/member");
-          } else if (role === "5" || role === "6") {
+          } else if (
+            (permissions & 128) === 128 ||
+            (permissions & 256) === 256 ||
+            (permissions & 512) === 512 ||
+            (permissions & 1024) === 1024
+          ) {
             this.$router.push("/product");
-          } else if (role === "7" || role === "8") {
+          } else if (
+            (permissions & 2048) === 2048 ||
+            (permissions & 4096) === 4096 ||
+            (permissions & 8192) === 8192
+          ) {
             this.$router.push("/order");
           }
+
           this.$message({
             message: "登入成功",
             type: "success",

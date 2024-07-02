@@ -8,16 +8,16 @@
         /// <summary>
         /// 當前登入用戶名稱
         /// </summary>
-        public string CurrentUser { get; set; }
+        public string Un { get; set; }
         
         /// <summary>
         /// 當前登入用戶權限
         /// </summary>
-        public string CurrentPermission { get; set; }
+        public int Permission { get; set; }
 
         /// <summary>
         /// 當前登入用戶sessionID
         /// </summary>
-        public string CurrentsessionID { get; set; }
+        public string SessionID { get; set; }
     }
 }
