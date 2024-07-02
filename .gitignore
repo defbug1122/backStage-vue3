@@ -258,3 +258,4 @@ _Pvt_Extensions
 bin/
 obj/
 .vs/
+.vscode/
