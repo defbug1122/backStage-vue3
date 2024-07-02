@@ -1,11 +1,14 @@
 import Vue from "vue";
 
 export const store = Vue.observable({
+  // 當前用戶資料
   currentUser: {
     un: sessionStorage.getItem("currentUser"),
     role: sessionStorage.getItem("role"),
     token: sessionStorage.getItem("token"),
   },
+
+  // 權限對應表
   permissionMap: {
     1: "新增帳號",
     2: "刪除帳號",

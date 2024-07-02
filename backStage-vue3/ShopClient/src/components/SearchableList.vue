@@ -5,7 +5,6 @@
         v-model="localSearchTerm"
         placeholder="請輸入欲查詢關鍵字"
       ></el-input>
-      <el-button @click="handleSearch">查詢</el-button>
       <el-select v-if="showSort" v-model="localSortBy" placeholder="排序方式">
         <el-option
           v-for="option in sortOptions"
@@ -14,6 +13,7 @@
           :value="option.value"
         ></el-option>
       </el-select>
+      <el-button @click="handleSearch">查詢</el-button>
       <el-button v-if="showAddButton" @click="$emit('add')">新增</el-button>
     </div>
 
@@ -95,8 +95,9 @@ export default {
     },
   },
   methods: {
+    // 查詢功能
     handleSearch() {
-      this.$emit("search", this.localSearchTerm, this.localSortBy);
+      this.$emit("search", this.localSearchTerm, 1, this.localSortBy);
     },
   },
 };
@@ -108,7 +109,6 @@ export default {
 }
 .search-bar {
   display: flex;
-  width: 500px;
   margin: 0 auto 20px auto;
 }
 
@@ -140,5 +140,9 @@ tbody tr:nth-child(odd) {
 
 .pagination button {
   margin: 0 5px;
+}
+
+.el-button + .el-button {
+  margin: 0;
 }
 </style>

@@ -8,8 +8,14 @@ namespace backStage_vue3.Controllers
     [SessionAuthorizationFilter]
     public class BaseController : ApiController
     {
-        protected UserSessionModel UserSession { get; private set; }
+        /// <summary>
+        /// 初始化 UserSession
+        /// </summary>
+        protected UserSessionModel UserSession { get; set; }
 
+        /// <summary>
+        /// 繼承BaseController可取用UserSession
+        /// </summary>
         public BaseController()
         {
             UserSession = HttpContext.Current.Session["userSessionInfo"] as UserSessionModel;

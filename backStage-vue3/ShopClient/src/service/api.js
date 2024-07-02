@@ -13,7 +13,7 @@ export const logout = () => {
 // 取得用戶列表API
 export const getUserList = (params) => {
   return https.get(
-    `/api/user/list?searchTerm=${params.searchTerm}&pageNumber=${params.pageNumber}&pageSize=${params.pageSize}`
+    `/api/user/list?searchTerm=${params.searchTerm}&pageNumber=${params.pageNumber}&pageSize=${params.pageSize}&sortBy=${params.sortBy}`
   );
 };
 

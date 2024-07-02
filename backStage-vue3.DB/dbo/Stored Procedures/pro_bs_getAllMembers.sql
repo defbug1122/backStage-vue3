@@ -1,16 +1,17 @@
-﻿CREATE PROCEDURE [dbo].[pro_bs_getAllAcc]
+﻿CREATE PROCEDURE [dbo].[pro_bs_getAllMembers]
     @currentUn VARCHAR(16),
     @currentSessionID CHAR(24),
-    @searchTerm NVARCHAR(16) = "",
+    @searchTerm VARCHAR(16) = "",
     @pageNumber INT,
     @pageSize INT,
-	@sortBy INT = 1,
+    @sortBy INT = 1,
     @statusCode INT OUTPUT
 AS
 BEGIN
     SET NOCOUNT ON;
 
     DECLARE @dbSessionID CHAR(24);
+    DECLARE @offset INT = (@pageNumber - 1) * @pageSize;
 
     SET @statusCode = 0;
 
@@ -23,33 +24,29 @@ BEGIN
         RETURN;
     END
 
-    -- 計算 OFFSET
-    DECLARE @offset INT = (@pageNumber - 1) * @pageSize;
-
     -- 獲取用戶列表
     SELECT 
-        f_id,
-        f_un,
-        f_pwd,
-        f_createTime,
-        f_Permission
+        f_mId,
+        f_mn,
+        f_level,
+        f_status,
+		f_totalSpent
     FROM 
-        t_acc WITH(NOLOCK)
+        t_member WITH(NOLOCK)
     WHERE 
-        f_un LIKE '%' + @searchTerm + '%'
+        f_mn LIKE '%' + @searchTerm + '%'
     ORDER BY 
-		CASE 
-            WHEN @sortBy = 1 THEN f_un
+        CASE 
+            WHEN @sortBy = 1 THEN f_mId
         END ASC,
         CASE
-            WHEN @sortBy = 2 THEN f_createTime
-        END DESC
+            WHEN @sortBy = 2 THEN f_level
+        END ASC
     OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;
 
-    -- 獲取總記錄數
     SELECT COUNT(*) AS TotalRecords
-    FROM t_acc WITH(NOLOCK)
-    WHERE f_un LIKE '%' + @searchTerm + '%';
+    FROM t_member WITH(NOLOCK)
+    WHERE f_mn LIKE '%' + @searchTerm + '%';
 
     SET @statusCode = 0;
 END

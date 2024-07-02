@@ -44,7 +44,6 @@ namespace backStage_vue3.Controllers
                 {
                     CommandType = CommandType.StoredProcedure
                 };
-                //command.CommandType = CommandType.StoredProcedure;
                 command.Parameters.AddWithValue("@currentUn", UserSession.Un);
                 command.Parameters.AddWithValue("@currentSessionID", UserSession.SessionID);
                 command.Parameters.AddWithValue("@searchTerm", searchTerm);
@@ -152,7 +151,6 @@ namespace backStage_vue3.Controllers
                 {
                     CommandType = CommandType.StoredProcedure
                 };
-                //command.CommandType = CommandType.StoredProcedure;
                 command.Parameters.AddWithValue("@currentUn", UserSession.Un);
                 command.Parameters.AddWithValue("@currentSessionID", UserSession.SessionID);
                 command.Parameters.AddWithValue("@mId",model.MemberId);
@@ -225,7 +223,6 @@ namespace backStage_vue3.Controllers
                 {
                     CommandType = CommandType.StoredProcedure
                 };
-                //command.CommandType = CommandType.StoredProcedure;
                 command.Parameters.AddWithValue("@currentUn", UserSession.Un);
                 command.Parameters.AddWithValue("@currentSessionID", UserSession.SessionID);
                 command.Parameters.AddWithValue("@mId", model.MemberId);

@@ -17,7 +17,7 @@
         <el-form-item label="密碼">
           <el-input v-model="user.pwd" type="password"></el-input>
         </el-form-item>
-        <el-form-item v-if="canEditPermission" label="權限">
+        <el-form-item v-if="canEditPermission()" label="權限">
           <el-select
             v-model="selectedPermissions"
             multiple
@@ -89,12 +89,11 @@ export default {
     };
   },
   watch: {
+    // 監聽使用者權限變化
     user: {
       handler(newVal) {
         this.selectedPermissions = this.parsePermissions(newVal.permission);
       },
-      immediate: true,
-      deep: true,
     },
   },
   created() {
@@ -102,42 +101,24 @@ export default {
       this.selectedPermissions = this.parsePermissions(this.user.permission);
     }
   },
-  computed: {
-    canEditPermission() {
-      console.log("this.currentUserRole", this.currentUserRole);
-      // 如果當前用戶具有最高權限並且不是編輯自己的情況
-      if (
-        this.currentUserRole === 16383 &&
-        this.user.un !== this.currentUserName
-      ) {
-        return true;
-      }
-      // 如果當前用戶具有編輯權限，並且不是編輯自己的情況，且目標用戶的權限不是最高權限
-      else if (
-        (this.currentUserRole & 4) === 4 &&
-        this.user.un !== this.currentUserName &&
-        this.user.permission !== 16383
-      ) {
-        return true;
-      } else {
-        return false;
-      }
-    },
-  },
   methods: {
+    // 權限處理
     parsePermissions(permission) {
       let permissions = [];
       this.options.forEach((option) => {
-        if (permission & option.value) {
+        if ((permission & option.value) === option.value) {
           permissions.push(option.value);
         }
       });
       return permissions;
     },
+
+    // 計算選擇權限加總
     calculatePermissionSum() {
       return this.selectedPermissions.reduce((sum, value) => sum + value, 0);
     },
-    // 規則處理
+
+    // 規則處理，使用 Set (Array的元素不會重複) 中判斷是否包含某個權限
     handlePermissionChange() {
       const permissionsSet = new Set(this.selectedPermissions);
 
@@ -165,6 +146,29 @@ export default {
 
       this.selectedPermissions = Array.from(permissionsSet);
     },
+
+    // 是否出現編輯權限欄位
+    canEditPermission() {
+      // 如果當前用戶具有最高權限並且不是編輯自己的情況
+      if (
+        this.currentUserRole === 16383 &&
+        this.user.un !== this.currentUserName
+      ) {
+        return true;
+      }
+      // 如果當前用戶具有編輯權限，並且不是編輯自己的情況，且目標用戶的權限不是最高權限
+      else if (
+        (this.currentUserRole & 4) === 4 &&
+        this.user.un !== this.currentUserName &&
+        this.user.permission !== 16383
+      ) {
+        return true;
+      } else {
+        return false;
+      }
+    },
+
+    // 保存設定
     saveUser() {
       this.user.permission = this.calculatePermissionSum();
       if (

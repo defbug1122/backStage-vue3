@@ -101,59 +101,48 @@ export default {
     };
   },
   methods: {
-    // 登出
-    logout() {
-      mutations.setUserInfo({
-        user: "",
-        role: "",
-        token: "",
-      });
-      sessionStorage.removeItem("token");
-      sessionStorage.removeItem("currentUser");
-      sessionStorage.removeItem("role");
-      this.$router.push("/login");
-      this.$message({
-        message: "登出成功",
-        type: "success",
-        duration: 1200,
-      });
-    },
-
     // 取得會員列表
-    fetchMembers(
+    async fetchMembers(
       searchTerm,
-      sortBy = this.sortBy,
-      pageNumber = this.pageNumber
+      pageNumber = this.pageNumber,
+      sortBy = this.sortBy
     ) {
-      getMemberList({
+      const response = await getMemberList({
         searchTerm: searchTerm || this.searchTerm,
-        sortBy: sortBy,
         pageNumber: pageNumber,
         pageSize: this.pageSize,
-      })
-        .then((response) => {
+        sortBy: sortBy,
+      });
+      try {
+        if (response.data.code === 0) {
           this.members = response.data.data || [];
           this.hasMore = response.data.hasMore || false;
           this.pageNumber = pageNumber;
-        })
-        .catch((error) => {
-          console.error("error", error);
-          this.members = [];
-          this.hasMore = false;
-        });
+        } else {
+          this.$message({
+            message: "資料獲取失敗",
+            type: "error",
+            duration: 1200,
+          });
+        }
+      } catch (error) {
+        console.error("error", error);
+        this.members = [];
+        this.hasMore = false;
+      }
     },
 
     // 上一頁功能
     handlePrevPage() {
       if (this.pageNumber > 1) {
-        this.fetchMembers(this.searchTerm, this.sortBy, this.pageNumber - 1);
+        this.fetchMembers(this.searchTerm, this.pageNumber - 1, this.sortBy);
       }
     },
 
     // 下一頁功能
     handleNextPage() {
       if (this.hasMore) {
-        this.fetchMembers(this.searchTerm, this.sortBy, this.pageNumber + 1);
+        this.fetchMembers(this.searchTerm, this.pageNumber + 1, this.sortBy);
       }
     },
 

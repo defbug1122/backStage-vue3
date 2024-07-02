@@ -4,7 +4,8 @@
     <SearchableList
       :searchTerm="searchTerm"
       @search="fetchUsers"
-      :showSort="false"
+      :showSort="true"
+      :sortOptions="sortOptions"
       :tableTitle="tableTitle"
       :tableData="users"
       :hasMore="hasMore"
@@ -86,9 +87,14 @@ export default {
   data() {
     return {
       tableTitle: ["帳號", "權限", "創立時間", "操作"],
+      sortOptions: [
+        { label: "按會員名稱排序", value: 1 },
+        { label: "按創立日期排序", value: 2 },
+      ],
       currentUser: store.currentUser.un,
       role: store.currentUser.role,
       searchTerm: "",
+      sortBy: 1,
       users: [],
       showModal: false,
       hasMore: false,
@@ -148,41 +154,52 @@ export default {
     },
 
     // 取得用戶列表
-    fetchUsers(searchTerm, pageNumber = this.pageNumber) {
-      getUserList({
+    async fetchUsers(
+      searchTerm,
+      pageNumber = this.pageNumber,
+      sortBy = this.sortBy
+    ) {
+      const response = await getUserList({
         searchTerm: searchTerm || this.searchTerm,
         pageNumber: pageNumber,
         pageSize: this.pageSize,
-      })
-        .then((response) => {
+        sortBy: sortBy,
+      });
+      try {
+        if (response.data.code === 0) {
           this.users = response.data.data || [];
           this.hasMore = response.data.hasMore || false;
           this.pageNumber = pageNumber;
-        })
-        .catch((error) => {
-          console.error("error", error);
-          this.users = [];
-          this.hasMore = false;
-        });
+        } else {
+          this.$message({
+            message: "資料獲取失敗",
+            type: "error",
+            duration: 1200,
+          });
+        }
+      } catch (error) {
+        console.error("error", error);
+        this.users = [];
+        this.hasMore = false;
+      }
     },
 
     // 上一頁功能
     handlePrevPage() {
       if (this.pageNumber > 1) {
-        this.fetchUsers(this.searchTerm, this.pageNumber - 1);
+        this.fetchUsers(this.searchTerm, this.pageNumber - 1, this.sortBy);
       }
     },
 
     // 下一頁功能
     handleNextPage() {
       if (this.hasMore) {
-        this.fetchUsers(this.searchTerm, this.pageNumber + 1);
+        this.fetchUsers(this.searchTerm, this.pageNumber + 1, this.sortBy);
       }
     },
 
     // 打開"新增用戶"彈窗
     openCreateModal() {
-      console.log("打開新增談窗---");
       this.resetUser();
       this.isEditMode = false;
       this.showModal = true;
@@ -354,14 +371,13 @@ export default {
 
     // 判斷是否能編輯用戶
     canEditUser(item) {
-      const itemPermission = item.permission;
-      // if (itemPermission === 16383) {
-      //   return false;
-      // }
-      if (this.role === 16383 || (this.role & 4) === 4) {
+      if (item.permission === 16383 && this.currentUser !== item.un) {
+        return false;
+      } else if (this.role === 16383 || (this.role & 4) === 4) {
         return true;
+      } else {
+        return false;
       }
-      return false;
     },
 
     // 判斷是否能刪除用戶

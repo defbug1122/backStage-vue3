@@ -1,7 +1,7 @@
 <template>
   <el-menu
     :default-active="currentRoute"
-    class="el-menu-vertical-demo"
+    class="el-menu"
     @select="handleMenuClick"
   >
     <el-menu-item
@@ -15,8 +15,6 @@
 </template>
 
 <script>
-import { store } from "@/store";
-
 export default {
   name: "Menu",
   data() {
@@ -56,23 +54,25 @@ export default {
     const role = sessionStorage.getItem("role");
 
     if (role && token) {
-      const permissions = parseInt(role, 10);
-      this.generateMenuOptions(permissions);
+      this.generateMenuOptions(role);
     }
   },
   methods: {
-    generateMenuOptions(permissions) {
+    // 判斷目前用戶權限會有的菜單內容
+    generateMenuOptions(role) {
       const menuOptions = [];
 
       for (const key in this.menuLoginList) {
         const menu = this.menuLoginList[key];
-        if (menu.permission.some((p) => permissions & p)) {
+        if (menu.permission.some((p) => (role & p) === p)) {
           menuOptions.push(menu);
         }
       }
 
       this.menuOptions = menuOptions;
     },
+
+    // 點擊選單導向路徑
     handleMenuClick(path) {
       this.$router.push(path);
     },

@@ -22,7 +22,7 @@ namespace backStage_vue3.Controllers
         /// <param name="pageSize"></param>
         /// <returns></returns>
         [HttpGet, Route("api/user/list")]
-        public async Task<IHttpActionResult> GetUsers(string searchTerm = "", int pageNumber = 1, int pageSize = 10)
+        public async Task<IHttpActionResult> GetUsers(string searchTerm = "", int pageNumber = 1, int pageSize = 10, int sortBy = 1)
         {
             var result = new GetUserResponseDto();
 
@@ -52,6 +52,7 @@ namespace backStage_vue3.Controllers
                 command.Parameters.AddWithValue("@searchTerm", searchTerm);
                 command.Parameters.AddWithValue("@pageNumber", pageNumber);
                 command.Parameters.AddWithValue("@pageSize", pageSize);
+                command.Parameters.AddWithValue("@sortBy", sortBy);
 
                 SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
                 {
@@ -159,7 +160,6 @@ namespace backStage_vue3.Controllers
                 {
                     CommandType = CommandType.StoredProcedure
                 };
-                //command.CommandType = CommandType.StoredProcedure;
                 command.Parameters.AddWithValue("@currentUn", UserSession.Un);
                 command.Parameters.AddWithValue("@currentSessionID", UserSession.SessionID);
                 command.Parameters.AddWithValue("@un", model.Un);
@@ -244,7 +244,6 @@ namespace backStage_vue3.Controllers
                 {
                     CommandType = CommandType.StoredProcedure
                 };
-                //command.CommandType = CommandType.StoredProcedure;
                 command.Parameters.AddWithValue("@currentUn", UserSession.Un);
                 command.Parameters.AddWithValue("@currentSessionID", UserSession.SessionID);
                 command.Parameters.AddWithValue("@un", model.Un);
@@ -326,7 +325,6 @@ namespace backStage_vue3.Controllers
                 {
                     CommandType = CommandType.StoredProcedure
                 };
-                //command.CommandType = CommandType.StoredProcedure;
                 command.Parameters.AddWithValue("@currentUn", UserSession.Un);
                 command.Parameters.AddWithValue("@currentSessionID", UserSession.SessionID);
                 command.Parameters.AddWithValue("@un", model.Un);
