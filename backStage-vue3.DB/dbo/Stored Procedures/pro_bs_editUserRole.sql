@@ -1,7 +1,4 @@
 ﻿CREATE PROCEDURE [dbo].[pro_bs_editUserRole]
-    @currentUserId INT,
-    @currentSessionId CHAR(24),
-	@currentPermission INT,
     @userId INT,
     @newPermission INT,
     @updateTime DATETIME,

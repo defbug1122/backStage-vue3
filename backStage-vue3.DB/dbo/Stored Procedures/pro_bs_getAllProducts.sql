@@ -1,8 +1,5 @@
 ﻿
 CREATE PROCEDURE [dbo].[pro_bs_getAllProducts]
-    @currentUserId INT,
-    @currentSessionId CHAR(24),
-	@currentPermission INT,
     @searchTerm VARCHAR(16) = "",
     @pageNumber INT,
     @pageSize INT,

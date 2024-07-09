@@ -13,7 +13,7 @@
     <div>
       <el-form :model="product">
         <el-form-item label="商品名稱">
-          <el-input v-model="product.name"></el-input>
+          <el-input maxlength="20" v-model="product.name"></el-input>
         </el-form-item>
         <el-form-item label="商品圖片">
           <UploadImage @upload-success="HandleUploadSuccess"></UploadImage>
@@ -35,7 +35,7 @@
           <el-checkbox v-model="product.active"></el-checkbox>
         </el-form-item>
         <el-form-item label="商品描述">
-          <el-input v-model="product.describe"></el-input>
+          <el-input maxlength="50" v-model="product.describe"></el-input>
         </el-form-item>
         <el-form-item label="庫存量">
           <el-input v-model="product.stock" type="number"></el-input>
@@ -74,10 +74,10 @@ export default {
         name: "",
         imagePath: "",
         type: null,
-        price: 0,
+        price: 10,
         active: false,
         describe: "",
-        stock: 0,
+        stock: 10,
       }),
     },
   },
@@ -163,6 +163,14 @@ export default {
 
   .el-form-item__label {
     line-height: unset;
+  }
+}
+
+.el-input {
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
   }
 }
 </style>

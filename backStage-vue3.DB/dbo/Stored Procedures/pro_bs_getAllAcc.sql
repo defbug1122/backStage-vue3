@@ -1,7 +1,4 @@
 ﻿CREATE PROCEDURE [dbo].[pro_bs_getAllAcc]
-    @currentUserId INT,
-    @currentSessionId CHAR(24),
-	@currentPermission INT,
     @searchTerm NVARCHAR(16) = "",
     @pageNumber INT,
     @pageSize INT,

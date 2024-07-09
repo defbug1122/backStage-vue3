@@ -24,7 +24,13 @@
         /// 用戶列表-用戶當前權限
         /// </summary>
         public int Permission { get; set; }
+    }
 
+    /// <summary>
+    /// 用戶列表請求參數
+    /// </summary>
+    public class GetUserRequest
+    {
         /// <summary>
         /// 用戶列表-關鍵字
         /// </summary>

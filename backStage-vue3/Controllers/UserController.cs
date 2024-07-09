@@ -25,7 +25,7 @@ namespace backStage_vue3.Controllers
         /// <param name="pageSize"></param>
         /// <returns></returns>
         [HttpGet, Route("api/user/list")]
-        public async Task<IHttpActionResult> GetUsers([FromUri] UserModel model)
+        public async Task<IHttpActionResult> GetUsers([FromUri] GetUserRequest model)
         {
             var result = new GetUserResponseDto();
 
@@ -60,9 +60,6 @@ namespace backStage_vue3.Controllers
                 {
                     CommandType = CommandType.StoredProcedure
                 };
-                command.Parameters.AddWithValue("@currentUserId", UserSession.Id);
-                command.Parameters.AddWithValue("@currentSessionId", UserSession.SessionID);
-                command.Parameters.AddWithValue("@currentPermission", UserSession.Permission);
                 command.Parameters.AddWithValue("@searchTerm", model.SearchTerm);
                 command.Parameters.AddWithValue("@pageNumber", model.PageNumber);
                 command.Parameters.AddWithValue("@pageSize", model.PageSize);
@@ -207,8 +204,6 @@ namespace backStage_vue3.Controllers
                 {
                     CommandType = CommandType.StoredProcedure
                 };
-                command.Parameters.AddWithValue("@currentUserId", UserSession.Id);
-                command.Parameters.AddWithValue("@currentSessionId", UserSession.SessionID);
                 command.Parameters.AddWithValue("@userName", model.UserName);
                 command.Parameters.AddWithValue("@pwd", HashHelper.ComputeSha256Hash(model.Pwd));
                 command.Parameters.AddWithValue("@createTime", DateTime.Now);
@@ -295,9 +290,6 @@ namespace backStage_vue3.Controllers
                 {
                     CommandType = CommandType.StoredProcedure
                 };
-                command.Parameters.AddWithValue("@currentUserId", UserSession.Id);
-                command.Parameters.AddWithValue("@currentPermission", UserSession.Permission);
-                command.Parameters.AddWithValue("@currentSessionId", UserSession.SessionID);
                 command.Parameters.AddWithValue("@userId", model.Id);
 
                 SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
@@ -405,9 +397,6 @@ namespace backStage_vue3.Controllers
                 {
                     CommandType = CommandType.StoredProcedure
                 };
-                command.Parameters.AddWithValue("@currentUserId", UserSession.Id);
-                command.Parameters.AddWithValue("@currentSessionId", UserSession.SessionID);
-                command.Parameters.AddWithValue("@currentPermission", UserSession.Permission);
                 command.Parameters.AddWithValue("@userId", model.Id);
                 command.Parameters.AddWithValue("@newPermission", model.Permission);
                 command.Parameters.AddWithValue("@updateTime", DateTime.Now);
@@ -426,7 +415,7 @@ namespace backStage_vue3.Controllers
                 {
                     _sessionService.UpdateUserPermission(model.Id, model.Permission);
 
-                    // 强制更新当前会话信息，以确保新权限生效
+                    // 強制更新當前會話信息，已確保權限更新生效
                     if (UserSession.Id == model.Id)
                     {
                         UserSession.Permission = model.Permission;
@@ -502,9 +491,6 @@ namespace backStage_vue3.Controllers
                 {
                     CommandType = CommandType.StoredProcedure
                 };
-                command.Parameters.AddWithValue("@currentUserId", UserSession.Id);
-                command.Parameters.AddWithValue("@currentSessionId", UserSession.SessionID);
-                command.Parameters.AddWithValue("@currentPermission", UserSession.Permission);
                 command.Parameters.AddWithValue("@userId", model.Id);
                 command.Parameters.AddWithValue("@newPwd", HashHelper.ComputeSha256Hash(model.Pwd));
                 command.Parameters.AddWithValue("@updateTime", DateTime.Now);

@@ -1,7 +1,7 @@
 <template>
   <div class="home-container">
-    <span>歡迎回來，</span>
-    <span>請點選左側選單繼續</span>
+    <span>"歡迎回來，</span>
+    <span>請點選左側選單繼續"</span>
   </div>
 </template>
 
@@ -22,5 +22,9 @@ export default {
   align-items: center;
   font-weight: 400;
   font-size: 22px;
+  color: #333;
+  font-family:
+    Zapf Humanist,
+    serif;
 }
 </style>

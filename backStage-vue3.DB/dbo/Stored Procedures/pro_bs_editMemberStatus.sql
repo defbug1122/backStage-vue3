@@ -1,8 +1,5 @@
 ﻿
 CREATE PROCEDURE [dbo].[pro_bs_editMemberStatus]
-    @currentUserId INT,
-    @currentSessionId CHAR(24),
-	@currentPermission INT,
     @memberId INT,
     @status BIT,
     @statusCode INT OUTPUT

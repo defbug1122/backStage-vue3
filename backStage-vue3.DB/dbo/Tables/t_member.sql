@@ -14,11 +14,13 @@
 
 
 
+
+
 GO
 
 CREATE TRIGGER [dbo].[trg_UpdateMemberLevel]
 ON [dbo].[t_member]
-AFTER INSERT, UPDATE
+AFTER INSERT
 AS
 BEGIN
     SET NOCOUNT ON;

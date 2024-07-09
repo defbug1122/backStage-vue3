@@ -1,6 +1,6 @@
 <template>
   <div class="user-info">
-    <div>當前用戶: {{ user.userName }}</div>
+    <span>當前用戶: {{ user.userName }}</span>
     <el-button type="info" @click="OpenEditPasswordModal">編輯</el-button>
     <el-button type="primary" class="logout-button" @click="Logout"
       >登出</el-button
@@ -143,6 +143,7 @@ export default {
   display: flex;
   justify-content: end;
   align-items: center;
+  margin: 10px;
 }
 
 .logout-button {
@@ -153,5 +154,9 @@ export default {
 .logout-button:hover {
   background-color: #000000;
   border-color: unset;
+}
+
+span {
+  margin-right: 20px;
 }
 </style>

@@ -19,7 +19,7 @@ namespace backStage_vue3.Controllers
         /// <param name="pageSize"></param>
         /// <returns></returns>
         [HttpGet, Route("api/product/list")]
-        public async Task<IHttpActionResult> GetMembers([FromUri] ProductModel model)
+        public async Task<IHttpActionResult> GetProducts([FromUri] GetProdctRequest model)
         {
 
             var result = new GetProductResponseDto();
@@ -62,9 +62,6 @@ namespace backStage_vue3.Controllers
                 {
                     CommandType = CommandType.StoredProcedure
                 };
-                command.Parameters.AddWithValue("@currentUserId", UserSession.Id);
-                command.Parameters.AddWithValue("@currentSessionId", UserSession.SessionID);
-                command.Parameters.AddWithValue("@currentPermission", UserSession.Permission);
                 command.Parameters.AddWithValue("@searchTerm", model.SearchTerm);
                 command.Parameters.AddWithValue("@pageNumber", model.PageNumber);
                 command.Parameters.AddWithValue("@pageSize", model.PageSize);

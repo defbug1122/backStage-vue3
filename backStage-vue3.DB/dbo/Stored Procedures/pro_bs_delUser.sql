@@ -1,7 +1,4 @@
 ﻿CREATE PROCEDURE [dbo].[pro_bs_delUser]
-    @currentUserId INT,
-    @currentSessionId CHAR(24),
-	@currentPermission INT,
     @userId INT,
     @statusCode INT OUTPUT
 AS

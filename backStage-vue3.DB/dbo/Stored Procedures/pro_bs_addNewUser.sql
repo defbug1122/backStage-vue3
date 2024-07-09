@@ -1,6 +1,4 @@
 ﻿CREATE PROCEDURE [dbo].[pro_bs_addNewUser]
-    @currentUserId INT,
-    @currentSessionId CHAR(24),
     @userName VARCHAR(16),
     @pwd CHAR(64),
     @createTime DATETIME,

@@ -29,7 +29,13 @@
         /// 會員列表-會員帳號狀態
         /// </summary>
         public bool Status { get; set; }
+    }
 
+    /// <summary>
+    /// 會員列表請求參數
+    /// </summary>
+    public class GetMemberRequest
+    {
         /// <summary>
         /// 會員列表-關鍵字
         /// </summary>

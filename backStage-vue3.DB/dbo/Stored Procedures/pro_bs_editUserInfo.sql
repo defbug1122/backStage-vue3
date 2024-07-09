@@ -1,7 +1,4 @@
 ﻿CREATE PROCEDURE [dbo].[pro_bs_editUserInfo]
-    @currentUserId INT,
-    @currentSessionId CHAR(24),
-	@currentPermission INT,
     @userId INT,
     @newPwd CHAR(64),
     @updateTime DATETIME,

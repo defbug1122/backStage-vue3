@@ -49,7 +49,13 @@ namespace backStage_vue3.Models
         /// 商品列表-商品庫存
         /// </summary>
         public int Stock { get; set; }
+    }
 
+    /// <summary>
+    /// 商品列表請求參數
+    /// </summary>
+    public class GetProdctRequest
+    {
         /// <summary>
         /// 商品列表-關鍵字
         /// </summary>
