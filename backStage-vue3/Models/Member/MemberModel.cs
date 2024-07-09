@@ -8,12 +8,12 @@
         /// <summary>
         /// 會員列表-索引鍵
         /// </summary>
-        public int Id { get; set; }
+        public int MemberId { get; set; }
 
         /// <summary>
         /// 會員列表-會員名稱
         /// </summary>
-        public string Mn { get; set; }
+        public string MemberName { get; set; }
 
         /// <summary>
         /// 會員列表-會員等級
@@ -29,5 +29,25 @@
         /// 會員列表-會員帳號狀態
         /// </summary>
         public bool Status { get; set; }
+
+        /// <summary>
+        /// 會員列表-關鍵字
+        /// </summary>
+        public string SearchTerm { get; set; } = "";
+
+        /// <summary>
+        /// 會員列表-頁面第幾頁
+        /// </summary>
+        public int PageNumber { get; set; } = 1;
+
+        /// <summary>
+        /// 會員列表-頁面顯示幾筆
+        /// </summary>
+        public int PageSize { get; set; } = 10;
+
+        /// <summary>
+        /// 會員列表-排序類別
+        /// </summary>
+        public int SortBy { get; set; } = 1;
     }
 }

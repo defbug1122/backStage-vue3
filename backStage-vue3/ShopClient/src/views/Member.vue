@@ -1,9 +1,9 @@
 <template>
   <div class="member-container">
     <UserInfo />
-    <SearchableList
+    <SearchList
       :searchTerm="searchTerm"
-      @search="fetchMembers"
+      @search="FetchMembers"
       :showSort="true"
       :sortOptions="sortOptions"
       :sortBy="sortBy"
@@ -12,16 +12,19 @@
       :hasMore="hasMore"
       :pageNumber="pageNumber"
       :pageSize="pageSize"
-      @prevPage="handlePrevPage"
-      @nextPage="handleNextPage"
+      @prevPage="HandlePrevPage"
+      @nextPage="HandleNextPage"
     >
       <template #table-rows="{ tableData }">
-        <tr v-for="item in tableData" :key="item.id">
-          <td>{{ item.id }}</td>
-          <td>{{ item.mn }}</td>
+        <tr v-for="item in tableData" :key="item.memberId">
+          <td>{{ item.memberId }}</td>
+          <td>{{ item.memberName }}</td>
           <td>
-            <div v-if="isEditing[item.id]">
-              <el-select v-model="editedLevel[item.id]" placeholder="選擇等級">
+            <div v-if="isEditing[item.memberId]">
+              <el-select
+                v-model="editedLevel[item.memberId]"
+                placeholder="選擇等級"
+              >
                 <el-option
                   v-for="level in levelMap"
                   :key="level.value"
@@ -29,14 +32,14 @@
                   :value="level.value"
                 ></el-option>
               </el-select>
-              <el-button @click="confirmEdit(item)">確定</el-button>
-              <el-button @click="cancelEdit(item)">取消</el-button>
+              <el-button @click="ConfirmEdit(item)">確定</el-button>
+              <el-button @click="CancelEdit(item)">取消</el-button>
             </div>
             <div v-else>
-              {{ getLevelName(item.level) }}
+              {{ GetLevelName(item.level) }}
               <el-button
-                v-if="(currentUser.permission & 32) === 32"
-                @click="editLevel(item)"
+                v-if="(currentUser.permission & 64) === 64"
+                @click="EditLevel(item)"
                 >編輯</el-button
               >
             </div>
@@ -45,39 +48,39 @@
           <td>
             <el-switch
               v-model="item.status"
-              :disabled="(currentUser.permission & 64) !== 64"
-              @change="handleStatusChange(item)"
+              :disabled="(currentUser.permission & 128) !== 128"
+              @change="HandleStatusChange(item)"
               active-text="啟用"
               inactive-text="停用"
             />
           </td>
         </tr>
       </template>
-    </SearchableList>
+    </SearchList>
   </div>
 </template>
 
 <script>
 import {
-  getMemberList,
-  updateMemberStatus,
-  updateMemberLevel,
+  GetMemberList,
+  UpdateMemberStatus,
+  UpdateMemberLevel,
 } from "@/service/api";
-import SearchableList from "@/components/SearchableList.vue";
+import SearchList from "@/components/SearchList.vue";
 import UserInfo from "@/components/UserInfo.vue";
 import { store, mutations } from "@/store";
 
 export default {
   name: "Member",
   components: {
-    SearchableList,
+    SearchList,
     UserInfo,
   },
   data() {
     return {
       tableTitle: ["會員編號", "名稱", "等級", "消費金額", "狀態"],
       currentUser: {
-        un: store.currentUser.un,
+        user: store.currentUser.user,
         permission: store.currentUser.role,
       },
       searchTerm: "",
@@ -92,10 +95,10 @@ export default {
         { label: "按等級排序", value: 2 },
       ],
       levelMap: [
-        { label: "鑽石等級", value: 1 },
-        { label: "白金等級", value: 2 },
-        { label: "黃金等級", value: 3 },
-        { label: "一般等級", value: 4 },
+        { label: "一般等級", value: 1 },
+        { label: "黃金等級", value: 2 },
+        { label: "白金等級", value: 3 },
+        { label: "鑽石等級", value: 4 },
       ],
       isEditing: {},
       editedLevel: {},
@@ -103,12 +106,12 @@ export default {
   },
   methods: {
     // 取得會員列表
-    async fetchMembers(
+    async FetchMembers(
       searchTerm,
       pageNumber = this.pageNumber,
       sortBy = this.sortBy
     ) {
-      const response = await getMemberList({
+      const response = await GetMemberList({
         searchTerm: searchTerm || this.searchTerm,
         pageNumber: pageNumber,
         pageSize: this.pageSize,
@@ -134,29 +137,29 @@ export default {
     },
 
     // 上一頁功能
-    handlePrevPage(searchTerm, sortBy) {
+    HandlePrevPage(searchTerm, sortBy) {
       if (this.pageNumber > 1) {
-        this.fetchMembers(searchTerm, this.pageNumber - 1, sortBy);
+        this.FetchMembers(searchTerm, this.pageNumber - 1, sortBy);
       }
     },
 
     // 下一頁功能
-    handleNextPage(searchTerm, sortBy) {
+    HandleNextPage(searchTerm, sortBy) {
       if (this.hasMore) {
-        this.fetchMembers(searchTerm, this.pageNumber + 1, sortBy);
+        this.FetchMembers(searchTerm, this.pageNumber + 1, sortBy);
       }
     },
 
     // 會員等級名稱處理
-    getLevelName(level) {
+    GetLevelName(level) {
       const foundLevel = this.levelMap.find((v) => v.value === level);
       return foundLevel ? foundLevel.label : "未知等級";
     },
 
     // 處理狀態變更
-    handleStatusChange(member) {
-      updateMemberStatus({
-        memberId: member.id,
+    HandleStatusChange(member) {
+      UpdateMemberStatus({
+        memberId: member.memberId,
         status: member.status,
       })
         .then((response) => {
@@ -186,21 +189,21 @@ export default {
     },
 
     // 编辑等级
-    editLevel(member) {
-      this.$set(this.isEditing, member.id, true);
-      this.$set(this.editedLevel, member.id, member.level);
+    EditLevel(member) {
+      this.$set(this.isEditing, member.memberId, true);
+      this.$set(this.editedLevel, member.memberId, member.level);
     },
 
     // 取消编辑等级
-    cancelEdit(member) {
-      this.$set(this.isEditing, member.id, false);
-      this.$delete(this.editedLevel, member.id);
+    CancelEdit(member) {
+      this.$set(this.isEditing, member.memberId, false);
+      this.$delete(this.editedLevel, member.memberId);
     },
     // 確認编辑等级
-    confirmEdit(member) {
-      updateMemberLevel({
-        memberId: member.id,
-        level: this.editedLevel[member.id],
+    ConfirmEdit(member) {
+      UpdateMemberLevel({
+        memberId: member.memberId,
+        level: this.editedLevel[member.memberId],
       })
         .then((response) => {
           if (response.data.code === 0) {
@@ -210,9 +213,9 @@ export default {
               duration: 1200,
             });
           }
-          member.level = this.editedLevel[member.id];
-          this.$set(this.isEditing, member.id, false);
-          this.$delete(this.editedLevel, member.id);
+          member.level = this.editedLevel[member.memberId];
+          this.$set(this.isEditing, member.memberId, false);
+          this.$delete(this.editedLevel, member.memberId);
         })
         .catch((error) => {
           this.$message({
@@ -224,7 +227,7 @@ export default {
     },
   },
   created() {
-    this.fetchMembers();
+    this.FetchMembers();
   },
 };
 </script>

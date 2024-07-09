@@ -46,6 +46,10 @@ const routes = [
     name: "NotFound",
     component: NotFound,
   },
+  {
+    path: "*",
+    redirect: "/",
+  },
 ];
 
 const router = new Router({

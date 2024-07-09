@@ -1,6 +1,7 @@
 <template>
   <div class="home-container">
-    <h1>首頁</h1>
+    <span>歡迎回來，</span>
+    <span>請點選左側選單繼續</span>
   </div>
 </template>
 
@@ -8,26 +9,18 @@
 export default {
   name: "Home",
   data() {
-    return {
-      menuList: [],
-    };
-  },
-  mounted() {
-    this.fetchData();
-  },
-  methods: {
-    async fetchData() {
-      console.log("df");
-    },
+    return {};
   },
 };
 </script>
 
 <style scoped>
-.read-the-docs {
-  color: #888;
-}
 .home-container {
+  height: 100vh;
   display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: 400;
+  font-size: 22px;
 }
 </style>

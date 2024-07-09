@@ -13,7 +13,7 @@
         /// <summary>
         /// 用戶列表-用戶名稱
         /// </summary>
-        public string Un { get; set; }
+        public string UserName { get; set; }
 
         /// <summary>
         /// 用戶列表-用戶創立時間
@@ -24,5 +24,25 @@
         /// 用戶列表-用戶當前權限
         /// </summary>
         public int Permission { get; set; }
+
+        /// <summary>
+        /// 用戶列表-關鍵字
+        /// </summary>
+        public string SearchTerm { get; set; } = "";
+
+        /// <summary>
+        /// 用戶列表-頁面第幾頁
+        /// </summary>
+        public int PageNumber { get; set; } = 1;
+
+        /// <summary>
+        /// 用戶列表-頁面顯示幾筆
+        /// </summary>
+        public int PageSize { get; set; } = 10;
+
+        /// <summary>
+        /// 用戶列表-排序類別
+        /// </summary>
+        public int SortBy { get; set; } = 1;
     }
 }

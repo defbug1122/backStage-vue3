@@ -8,7 +8,7 @@
         /// <summary>
         /// 用戶登入POST-請求參數-用戶名稱
         /// </summary>
-        public string Un { get; set; }
+        public string UserName { get; set; }
 
         /// <summary>
         /// 用戶登入POST-請求參數-用戶密碼

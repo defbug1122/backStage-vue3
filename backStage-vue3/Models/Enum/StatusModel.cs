@@ -26,7 +26,7 @@ namespace backStage_vue3.Models
         InvalidFormat = 2,
 
         /// <summary>
-        /// 缺少請求參數
+        /// 缺少正確請求參數
         /// </summary>
         MissingParams = 3,
 
@@ -36,7 +36,7 @@ namespace backStage_vue3.Models
         DeleteMyself = 4,
 
         /// <summary>
-        /// 當前登入用戶SessionId與資料庫不匹配
+        /// 當前登入用戶SessionId或權限與資料庫不匹配
         /// </summary>
         UnMatchSessionId = 5,
 
@@ -53,6 +53,31 @@ namespace backStage_vue3.Models
         /// <summary>
         /// 用戶不存在
         /// </summary>
-        NotFoundUser = 8
+        NotFoundUser = 8,
+
+        /// <summary>
+        /// 不能修改自己權限
+        /// </summary>
+        CannotEditOwnPermission = 9,
+
+        /// <summary>
+        /// 沒有修改權限
+        /// </summary>
+        CannotModifyPermission = 10,
+
+        /// <summary>
+        /// 權限設定失敗
+        /// </summary>
+        SetPermissionFailed = 11,
+
+        /// <summary>
+        /// 權限被異動
+        /// </summary>
+        PermissionChange = 12,
+
+        /// <summary>
+        /// 缺少身分驗證
+        /// </summary>
+        MissingAuthentication = 13
     }
 }

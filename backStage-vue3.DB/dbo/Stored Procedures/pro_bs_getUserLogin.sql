@@ -1,7 +1,7 @@
 ﻿CREATE PROCEDURE [dbo].[pro_bs_getUserLogin]
-    @un VARCHAR(16),
+    @userName VARCHAR(16),
     @pwd CHAR(64),
-    @uuid CHAR(24), 
+    @sessionId CHAR(24), 
     @statusCode INT OUTPUT
 AS
 BEGIN
@@ -11,20 +11,20 @@ BEGIN
     DECLARE @permission INT;
 
     -- 查詢用戶ID以及權限
-    SELECT @userId = f_id, @permission = f_permission
+    SELECT @userId = f_userId, @permission = f_permission
     FROM [t_acc] WITH(NOLOCK)
-    WHERE f_un = @un AND f_pwd = @pwd;
+    WHERE f_userName = @userName AND f_pwd = @pwd;
 
     -- 如果該用戶，更新 UUID
     IF @userId IS NOT NULL
     BEGIN
         UPDATE t_acc WITH(ROWLOCK)
-        SET f_uuid = @uuid
-        WHERE f_id = @userId;
+        SET f_sessionId = @sessionId
+        WHERE f_userId = @userId;
 
         SET @statusCode = 0;
 
-        SELECT @userId AS f_id, @permission AS f_permission;
+        SELECT @userId AS f_userId, @permission AS f_permission;
     END
     ELSE
     BEGIN

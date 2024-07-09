@@ -4,73 +4,78 @@ namespace backStage_vue3.Models
     public enum Permissions
     {
         /// <summary>
+        /// 超級權限
+        /// </summary>
+        SuperPermission = 1,
+
+        /// <summary>
         /// 新增帳號
         /// </summary>
-        AddAccount = 1,
+        AddAccount = 2,
 
         /// <summary>
         /// 刪除帳號
         /// </summary>
-        DeleteAccount = 2,
+        DeleteAccount = 4,
 
         /// <summary>
         /// 編輯帳號
         /// </summary>
-        EditAccount = 4,
+        EditAccount = 8,
 
         /// <summary>
-        /// 查看帳號 8
+        /// 查看帳號 
         /// </summary>
-        ViewAccount = 8,
+        ViewAccount = 16,
 
         /// <summary>
         /// 查看會員
         /// </summary>
-        ViewMember = 16,
+        ViewMember = 32,
 
         /// <summary>
         /// 設置會員等級
         /// </summary>
-        SetMemberLevel = 32,
+        SetMemberLevel = 64,
 
         /// <summary>
         /// 設置會員停權
         /// </summary>
-        SuspendMember = 64,
+        SuspendMember = 128,
 
         /// <summary>
         /// 新增商品
         /// </summary>
-        AddProduct = 128,
+        AddProduct = 256,
 
         /// <summary>
         /// 查看商品
         /// </summary>
-        ViewProduct = 256,
+        ViewProduct = 512,
 
         /// <summary>
         /// 編輯商品
         /// </summary>
-        EditProduct = 512,
+        EditProduct = 1024,
 
         /// <summary>
         /// 刪除商品
         /// </summary>
-        DeleteProduct = 1024,
+        DeleteProduct = 2048,
 
         /// <summary>
         /// 查看訂單
         /// </summary>
-        ViewOrder = 2048,
+        ViewOrder = 4096,
 
         /// <summary>
         /// 編輯訂單
         /// </summary>
-        EditOrder = 4096,
+        EditOrder = 8192,
 
         /// <summary>
         /// 刪除訂單
         /// </summary>
-        DeleteOrder = 8192,
+        DeleteOrder = 16384,
     }
 }

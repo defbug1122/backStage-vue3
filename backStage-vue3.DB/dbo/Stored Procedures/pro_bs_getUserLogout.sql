@@ -1,5 +1,5 @@
 ﻿CREATE PROCEDURE [dbo].[pro_bs_getUserLogout]
-    @un VARCHAR(16),
+    @currentUserId INT,
     @statusCode INT OUTPUT
 AS
 BEGIN
@@ -7,8 +7,8 @@ BEGIN
 
     -- 清空 UUID
     UPDATE t_acc WITH(ROWLOCK)
-    SET f_uuid = NULL
-    WHERE f_un = @un;
+    SET f_sessionId = NULL
+    WHERE f_userId = @currentUserId;
 
     IF @@ROWCOUNT = 0
     BEGIN

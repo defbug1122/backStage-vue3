@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Web.Http;
 using backStage_vue3.Models;
@@ -9,11 +8,13 @@ using System.Data;
 using System.Threading.Tasks;
 using backStage_vue3.Utilities;
 using System.Web;
+using backStage_vue3.Services;
 
 namespace backStage_vue3.Controllers
 {
     public class UserController : BaseController
     {
+        private readonly UserSessionCacheService _sessionService = new UserSessionCacheService();
         string pattern = @"^[a-zA-Z0-9_-]{4,16}$";
 
         /// <summary>
@@ -24,7 +25,7 @@ namespace backStage_vue3.Controllers
         /// <param name="pageSize"></param>
         /// <returns></returns>
         [HttpGet, Route("api/user/list")]
-        public async Task<IHttpActionResult> GetUsers(string searchTerm = "", int pageNumber = 1, int pageSize = 10, int sortBy = 1)
+        public async Task<IHttpActionResult> GetUsers([FromUri] UserModel model)
         {
             var result = new GetUserResponseDto();
 
@@ -35,7 +36,13 @@ namespace backStage_vue3.Controllers
                 return StatusCode(HttpStatusCode.Forbidden);
             }
 
-            if (searchTerm != null && searchTerm.Length > 16)
+            if (model == null)
+            {
+                result.Code = (int)StatusResCode.MissingParams;
+                return Ok(result);
+            }
+
+            if ((model.SearchTerm != null && model.SearchTerm.Length > 16) || model.PageNumber <= 0 || model.PageSize != 10)
             {
                 result.Code = (int)StatusResCode.InvalidFormat;
                 return Ok(result);
@@ -53,14 +60,13 @@ namespace backStage_vue3.Controllers
                 {
                     CommandType = CommandType.StoredProcedure
                 };
-
-                //command.CommandType = CommandType.StoredProcedure;
-                command.Parameters.AddWithValue("@currentUn", UserSession.Un);
-                command.Parameters.AddWithValue("@currentSessionID", UserSession.SessionID);
-                command.Parameters.AddWithValue("@searchTerm", searchTerm);
-                command.Parameters.AddWithValue("@pageNumber", pageNumber);
-                command.Parameters.AddWithValue("@pageSize", pageSize);
-                command.Parameters.AddWithValue("@sortBy", sortBy);
+                command.Parameters.AddWithValue("@currentUserId", UserSession.Id);
+                command.Parameters.AddWithValue("@currentSessionId", UserSession.SessionID);
+                command.Parameters.AddWithValue("@currentPermission", UserSession.Permission);
+                command.Parameters.AddWithValue("@searchTerm", model.SearchTerm);
+                command.Parameters.AddWithValue("@pageNumber", model.PageNumber);
+                command.Parameters.AddWithValue("@pageSize", model.PageSize);
+                command.Parameters.AddWithValue("@sortBy", model.SortBy);
 
                 SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
                 {
@@ -80,30 +86,23 @@ namespace backStage_vue3.Controllers
                 reader = await command.ExecuteReaderAsync();
 
                 List<UserModel> users = new List<UserModel>();
-               
+
+                int totalRecords = 0;
+
                 while (await reader.ReadAsync())
                 {
                     UserModel user = new UserModel
                     {
-                        Id = Convert.ToInt32(reader["f_id"]),
-                        Un = reader["f_un"].ToString(),
+                        Id = Convert.ToInt32(reader["f_userId"]),
+                        UserName = reader["f_userName"].ToString(),
                         CreateTime = Convert.ToDateTime(reader["f_createTime"]).ToString("yyyy-MM-dd"),
                         Permission = Convert.ToInt32(reader["f_permission"]),
                     };
                     users.Add(user);
-                }
-
-                // 移到下一个结果集，獲取總數
-                await reader.NextResultAsync();
-
-                int totalRecords = 0;
-
-                if (await reader.ReadAsync())
-                {
                     totalRecords = Convert.ToInt32(reader["TotalRecords"]);
                 }
 
-                bool hasMore = (pageNumber * pageSize) < totalRecords;
+                bool hasMore = (model.PageNumber * model.PageSize) < totalRecords;
 
                 result.Code = (int)StatusResCode.Success;
                 result.Data = users;
@@ -138,6 +137,7 @@ namespace backStage_vue3.Controllers
         [HttpPost, Route("api/user/add")]
         public async Task<IHttpActionResult> CreateUser(UserAddModel model)
         {
+            var result = new AddUserResponseDto();
             bool checkPermission = (UserSession.Permission & (int)Permissions.AddAccount) == (int)Permissions.AddAccount;
 
             if (!checkPermission)
@@ -145,14 +145,55 @@ namespace backStage_vue3.Controllers
                 return StatusCode(HttpStatusCode.Forbidden);
             }
 
-            var result = new AddUserResponseDto();
+            if (model.UserName == null || model.Pwd == null || model.Permission == null)
+            {
+                result.Code = (int)StatusResCode.MissingParams;
+                return Ok(result);
+            }
 
             if (
-                !System.Text.RegularExpressions.Regex.IsMatch(model.Un, pattern) ||
+                !System.Text.RegularExpressions.Regex.IsMatch(model.UserName, pattern) ||
                 !System.Text.RegularExpressions.Regex.IsMatch(model.Pwd, pattern))
             {
                 result.Code = (int)StatusResCode.InvalidFormat;
                 return Ok(result);
+            }
+
+            // 檢查 model.Permission 不能為空，並且不能高於 32766
+            if (model.Permission == 0 || model.Permission > 32766 || (model.Permission & (int)Permissions.SuperPermission) == (int)Permissions.SuperPermission)
+            {
+                result.Code = (int)StatusResCode.SetPermissionFailed;
+                return Ok(result);
+            }
+
+            // 判斷是否為超級管理員
+            bool isSuperAdmin = (UserSession.Permission & (int)Permissions.SuperPermission) == (int)Permissions.SuperPermission;
+
+            // 如果不是超級管理員，則進行其他權限檢查
+            if (!isSuperAdmin)
+            {
+                bool hasAddPermission = (UserSession.Permission & (int)Permissions.AddAccount) == (int)Permissions.AddAccount;
+
+                // 沒有新增帳號權限
+                if (!hasAddPermission)
+                {
+                    result.Code = (int)StatusResCode.CannotModifyPermission;
+                    return Ok(result);
+                }
+
+                // 有新增帳號權限，但不能新增自己的權限
+                if (UserSession.Id == model.Id)
+                {
+                    result.Code = (int)StatusResCode.CannotEditOwnPermission;
+                    return Ok(result);
+                }
+
+                // 有新增帳號權限，但不能設定其他人的修改、新增、刪除帳號權限
+                if ((model.Permission & (int)(Permissions.EditAccount | Permissions.AddAccount | Permissions.DeleteAccount)) != 0)
+                {
+                    result.Code = (int)StatusResCode.SetPermissionFailed;
+                    return Ok(result);
+                }
             }
 
             SqlConnection connection = null;
@@ -166,9 +207,9 @@ namespace backStage_vue3.Controllers
                 {
                     CommandType = CommandType.StoredProcedure
                 };
-                command.Parameters.AddWithValue("@currentUn", UserSession.Un);
-                command.Parameters.AddWithValue("@currentSessionID", UserSession.SessionID);
-                command.Parameters.AddWithValue("@un", model.Un);
+                command.Parameters.AddWithValue("@currentUserId", UserSession.Id);
+                command.Parameters.AddWithValue("@currentSessionId", UserSession.SessionID);
+                command.Parameters.AddWithValue("@userName", model.UserName);
                 command.Parameters.AddWithValue("@pwd", HashHelper.ComputeSha256Hash(model.Pwd));
                 command.Parameters.AddWithValue("@createTime", DateTime.Now);
                 command.Parameters.AddWithValue("@permission", model.Permission);
@@ -222,7 +263,7 @@ namespace backStage_vue3.Controllers
         [HttpPost, Route("api/user/delete")]
         public async Task<IHttpActionResult> DeleteUser(UserDeleteModel model)
         {
-
+            var result = new DeleteUserResponseDto();
             bool checkPermission = (UserSession.Permission & (int)Permissions.DeleteAccount) == (int)Permissions.DeleteAccount;
 
             if (!checkPermission)
@@ -230,9 +271,13 @@ namespace backStage_vue3.Controllers
                 return StatusCode(HttpStatusCode.Forbidden);
             }
 
-            var result = new DeleteUserResponseDto();
+            if (model.Id == null)
+            {
+                result.Code = (int)StatusResCode.MissingParams;
+                return Ok(result);
+            }
 
-            if (UserSession.Un == model.Un)
+            if (UserSession.Id == model.Id)
             {
                 result.Code = (int)StatusResCode.DeleteMyself;
                 return Ok(result);
@@ -250,9 +295,10 @@ namespace backStage_vue3.Controllers
                 {
                     CommandType = CommandType.StoredProcedure
                 };
-                command.Parameters.AddWithValue("@currentUn", UserSession.Un);
-                command.Parameters.AddWithValue("@currentSessionID", UserSession.SessionID);
-                command.Parameters.AddWithValue("@un", model.Un);
+                command.Parameters.AddWithValue("@currentUserId", UserSession.Id);
+                command.Parameters.AddWithValue("@currentPermission", UserSession.Permission);
+                command.Parameters.AddWithValue("@currentSessionId", UserSession.SessionID);
+                command.Parameters.AddWithValue("@userId", model.Id);
 
                 SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
                 {
@@ -296,25 +342,150 @@ namespace backStage_vue3.Controllers
         }
 
         /// <summary>
-        /// HTTP POST 更新用戶 API
+        /// HTTP POST 更新用戶權限 API
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        [HttpPost, Route("api/user/update")]
-        public async Task<IHttpActionResult> EditUser(UserUpdateModel model)
+        [HttpPost, Route("api/user/updateRole")]
+        public async Task<IHttpActionResult> EditRole(UserEditRoleModel model)
         {
-            bool checkPermission = (UserSession.Permission & (int)Permissions.EditAccount) == (int)Permissions.EditAccount;
+            var result = new UserEditRoleResponseDto();
 
-            if (!checkPermission)
+            if (model.Id == 0 || model.Permission == 0)
+            {
+                result.Code = (int)StatusResCode.MissingParams;
+                return Ok(result);
+            }
+
+            // 檢查 model.Permission 不能為空，並且不能高於 32766
+            if (model.Permission > 32766 || (model.Permission & (int)Permissions.SuperPermission) == (int)Permissions.SuperPermission)
+            {
+                result.Code = (int)StatusResCode.SetPermissionFailed;
+                return Ok(result);
+            }
+
+            // 判斷是否為超級管理員
+            bool isSuperAdmin = (UserSession.Permission & (int)Permissions.SuperPermission) == (int)Permissions.SuperPermission;
+
+            // 如果不是超級管理員，則進行其他權限檢查
+            if (!isSuperAdmin)
+            {
+                bool hasEditPermission = (UserSession.Permission & (int)Permissions.EditAccount) == (int)Permissions.EditAccount;
+
+                // 沒有修改帳號權限
+                if (!hasEditPermission)
+                {
+                    result.Code = (int)StatusResCode.CannotModifyPermission;
+                    return Ok(result);
+                }
+
+                // 有修改帳號權限，但不能修改自己的權限
+                if (UserSession.Id == model.Id)
+                {
+                    result.Code = (int)StatusResCode.CannotEditOwnPermission;
+                    return Ok(result);
+                }
+
+                // 有修改帳號權限，但不能設定其他人的修改、新增、刪除帳號權限
+                if ((model.Permission & (int)(Permissions.EditAccount | Permissions.AddAccount | Permissions.DeleteAccount)) != 0)
+                {
+                    result.Code = (int)StatusResCode.SetPermissionFailed;
+                    return Ok(result);
+                }
+            }
+
+            SqlConnection connection = null;
+            SqlCommand command = null;
+
+            try
+            {
+                connection = new SqlConnection(SqlConfig.conStr);
+                connection.Open();
+                command = new SqlCommand("pro_bs_editUserRole", connection)
+                {
+                    CommandType = CommandType.StoredProcedure
+                };
+                command.Parameters.AddWithValue("@currentUserId", UserSession.Id);
+                command.Parameters.AddWithValue("@currentSessionId", UserSession.SessionID);
+                command.Parameters.AddWithValue("@currentPermission", UserSession.Permission);
+                command.Parameters.AddWithValue("@userId", model.Id);
+                command.Parameters.AddWithValue("@newPermission", model.Permission);
+                command.Parameters.AddWithValue("@updateTime", DateTime.Now);
+
+                SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
+                {
+                    Direction = ParameterDirection.Output
+                };
+                command.Parameters.Add(statusCodeParam);
+
+                await command.ExecuteNonQueryAsync();
+
+                int statusCode = (int)statusCodeParam.Value;
+
+                if (statusCode == 0)
+                {
+                    _sessionService.UpdateUserPermission(model.Id, model.Permission);
+
+                    // 强制更新当前会话信息，以确保新权限生效
+                    if (UserSession.Id == model.Id)
+                    {
+                        UserSession.Permission = model.Permission;
+                        HttpContext.Current.Session["userSessionInfo"] = UserSession;
+                    }
+
+                    result.Code = (int)StatusResCode.Success;
+                    return Ok(result);
+                }
+                else if (statusCode == 5)
+                {
+                    return StatusCode(HttpStatusCode.Unauthorized);
+                }
+                else
+                {
+                    result.Code = (int)StatusResCode.Failed;
+                    return Ok(result);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                return InternalServerError(ex);
+            }
+            finally
+            {
+                if (connection != null && connection.State == ConnectionState.Open)
+                {
+                    connection.Close();
+                }
+            }
+
+        }
+
+        /// <summary>
+        /// HTTP POST 編輯用戶密碼 API
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
+        [HttpPost, Route("api/user/editInfo")]
+        public async Task<IHttpActionResult> ResetInfo(UserEditInfoModel model)
+        {
+            var result = new UserEditInfoResponseDto();
+            // 判斷是否具有修改帳號權限
+            bool hasEditPermission = (UserSession.Permission & (int)Permissions.EditAccount) == (int)Permissions.EditAccount;
+
+            // 如果嘗試修改其他人的密碼但沒有修改帳號權限，返回403禁止
+            if (UserSession.Id != model.Id && !hasEditPermission)
             {
                 return StatusCode(HttpStatusCode.Forbidden);
             }
 
-            var result = new UpdateUserResponseDto();
+            if (model.Id == 0 || model.Pwd == null)
+            {
+                result.Code = (int)StatusResCode.MissingParams;
+                return Ok(result);
+            }
 
-            if (
-                !System.Text.RegularExpressions.Regex.IsMatch(model.Un, pattern) ||
-                !System.Text.RegularExpressions.Regex.IsMatch(model.Pwd, pattern))
+            if (!System.Text.RegularExpressions.Regex.IsMatch(model.Pwd, pattern))
             {
                 result.Code = (int)StatusResCode.InvalidFormat;
                 return Ok(result);
@@ -327,15 +498,15 @@ namespace backStage_vue3.Controllers
             {
                 connection = new SqlConnection(SqlConfig.conStr);
                 connection.Open();
-                command = new SqlCommand("pro_bs_editUser", connection)
+                command = new SqlCommand("pro_bs_editUserInfo", connection)
                 {
                     CommandType = CommandType.StoredProcedure
                 };
-                command.Parameters.AddWithValue("@currentUn", UserSession.Un);
-                command.Parameters.AddWithValue("@currentSessionID", UserSession.SessionID);
-                command.Parameters.AddWithValue("@un", model.Un);
+                command.Parameters.AddWithValue("@currentUserId", UserSession.Id);
+                command.Parameters.AddWithValue("@currentSessionId", UserSession.SessionID);
+                command.Parameters.AddWithValue("@currentPermission", UserSession.Permission);
+                command.Parameters.AddWithValue("@userId", model.Id);
                 command.Parameters.AddWithValue("@newPwd", HashHelper.ComputeSha256Hash(model.Pwd));
-                command.Parameters.AddWithValue("@newPermission", model.Permission);
                 command.Parameters.AddWithValue("@updateTime", DateTime.Now);
 
                 SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
@@ -400,7 +571,7 @@ namespace backStage_vue3.Controllers
                 {
                     CommandType = CommandType.StoredProcedure
                 };
-                command.Parameters.AddWithValue("@un",UserSession.Un);
+                command.Parameters.AddWithValue("@currentUserId",UserSession.Id);
                 SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
                 {
                     Direction = ParameterDirection.Output
@@ -412,6 +583,9 @@ namespace backStage_vue3.Controllers
 
                 if (statusCode == 0)
                 {
+                    // 清理緩存
+                    _sessionService.RemoveUserSession(UserSession.Id);
+
                     // 清理Session的值
                     HttpContext.Current.Session.Clear();
 

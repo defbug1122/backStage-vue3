@@ -70,12 +70,9 @@
     <Build Include="Security\test_1.sql" />
     <Build Include="dbo\Stored Procedures\pro_bs_addNewUser.sql" />
     <Build Include="dbo\Stored Procedures\pro_bs_getUserLogin.sql" />
-    <Build Include="dbo\Tables\t_products.sql" />
-    <Build Include="dbo\Tables\t_orders.sql" />
     <Build Include="dbo\Stored Procedures\pro_bs_getAllAcc.sql">
       <QuotedIdentifier>Off</QuotedIdentifier>
     </Build>
-    <Build Include="dbo\Stored Procedures\pro_bs_editUser.sql" />
     <Build Include="dbo\Stored Procedures\pro_bs_delUser.sql" />
     <Build Include="dbo\Stored Procedures\pro_bs_getUserLogout.sql" />
     <Build Include="dbo\Stored Procedures\pro_bs_getAllMembers.sql">
@@ -83,5 +80,15 @@
     </Build>
     <Build Include="dbo\Stored Procedures\pro_bs_editMemberStatus.sql" />
     <Build Include="dbo\Stored Procedures\pro_bs_editMemberLevel.sql" />
+    <Build Include="dbo\Tables\t_product.sql" />
+    <Build Include="dbo\Tables\t_order_detail.sql" />
+    <Build Include="dbo\Tables\t_order.sql" />
+    <Build Include="dbo\Stored Procedures\pro_bs_getAllProducts.sql">
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\pro_bs_editUserRole.sql" />
+    <Build Include="dbo\Stored Procedures\pro_bs_editUserInfo.sql" />
+    <Build Include="dbo\Stored Procedures\pro_bs_addNewProduct.sql" />
+    <Build Include="dbo\Stored Procedures\EditManualMemberLevels.sql" />
   </ItemGroup>
 </Project>

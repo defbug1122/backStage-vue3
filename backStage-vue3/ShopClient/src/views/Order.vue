@@ -5,7 +5,7 @@
 </template>
 
 <script>
-import Menu from "../components/Menu.vue";
+import Menu from "@/components/Menu.vue";
 
 export default {
   name: "Order",
@@ -18,10 +18,10 @@ export default {
     };
   },
   mounted() {
-    this.fetchData();
+    this.FetchData();
   },
   methods: {
-    async fetchData() {
+    async FetchData() {
       console.log("");
     },
   },

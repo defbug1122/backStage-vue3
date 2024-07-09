@@ -1,4 +1,5 @@
 ﻿using backStage_vue3.Models;
+using backStage_vue3.Services;
 using System.Net;
 using System.Net.Http;
 using System.Web;
@@ -15,9 +16,31 @@ namespace backStage_vue3.Filter
         public override void OnAuthorization(HttpActionContext actionContext)
         {
             var session = HttpContext.Current.Session["userSessionInfo"] as UserSessionModel;
+            var result = new UserSessionResponseDto();
 
             if (session == null) {
-                actionContext.Response = actionContext.Request.CreateResponse(HttpStatusCode.Unauthorized);
+                result.Code = (int)StatusResCode.MissingAuthentication;
+                actionContext.Response = actionContext.Request.CreateResponse(HttpStatusCode.Unauthorized, result);
+                return;
+            }
+
+            var sessionService = new UserSessionCacheService();
+            var cachedSession = sessionService.GetUserSession(session.Id);
+
+            if (session.SessionID != cachedSession.SessionID)
+            {
+                result.Code = (int)StatusResCode.UnMatchSessionId;
+                HttpContext.Current.Session.Abandon();
+                HttpContext.Current.Session.Clear();
+                actionContext.Response = actionContext.Request.CreateResponse(HttpStatusCode.Unauthorized, result);
+            }
+
+            if (session.Permission != cachedSession.Permission)
+            {
+                result.Code = (int)StatusResCode.PermissionChange;
+                HttpContext.Current.Session.Abandon();
+                HttpContext.Current.Session.Clear();
+                actionContext.Response = actionContext.Request.CreateResponse(HttpStatusCode.Unauthorized, result);
             }
 
         }

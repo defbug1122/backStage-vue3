@@ -20,10 +20,22 @@ namespace backStage_vue3.Controllers
         /// <param name="pageSize"></param>
         /// <returns></returns>
         [HttpGet, Route("api/member/list")]
-        public async Task<IHttpActionResult> GetMembers(string searchTerm = "", int pageNumber = 1, int pageSize = 10, int sortBy = 1)
+        public async Task<IHttpActionResult> GetMembers([FromUri] MemberModel model)
         {
 
             var result = new GetMemberResponseDto();
+
+            if (model == null)
+            {
+                result.Code = (int)StatusResCode.MissingParams;
+                return Ok(result);
+            }
+
+            if ((model.SearchTerm != null && model.SearchTerm.Length > 16) || model.PageNumber <= 0 || model.PageSize != 10)
+            {
+                result.Code = (int)StatusResCode.InvalidFormat;
+                return Ok(result);
+            }
 
             bool checkPermission = (UserSession.Permission & (int)Permissions.ViewMember) == (int)Permissions.ViewMember;
 
@@ -32,7 +44,7 @@ namespace backStage_vue3.Controllers
                 return StatusCode(HttpStatusCode.Forbidden);
             }
 
-            if (searchTerm != null && searchTerm.Length > 16)
+            if (model.SearchTerm != null && model.SearchTerm.Length > 16)
             {
                 result.Code = (int)StatusResCode.InvalidFormat;
                 return Ok(result);
@@ -50,12 +62,13 @@ namespace backStage_vue3.Controllers
                 {
                     CommandType = CommandType.StoredProcedure
                 };
-                command.Parameters.AddWithValue("@currentUn", UserSession.Un);
-                command.Parameters.AddWithValue("@currentSessionID", UserSession.SessionID);
-                command.Parameters.AddWithValue("@searchTerm", searchTerm);
-                command.Parameters.AddWithValue("@pageNumber", pageNumber);
-                command.Parameters.AddWithValue("@pageSize", pageSize);
-                command.Parameters.AddWithValue("@sortBy", sortBy);
+                command.Parameters.AddWithValue("@currentUserId", UserSession.Id);
+                command.Parameters.AddWithValue("@currentSessionId", UserSession.SessionID);
+                command.Parameters.AddWithValue("@currentPermission", UserSession.Permission);
+                command.Parameters.AddWithValue("@searchTerm", model.SearchTerm);
+                command.Parameters.AddWithValue("@pageNumber", model.PageNumber);
+                command.Parameters.AddWithValue("@pageSize", model.PageSize);
+                command.Parameters.AddWithValue("@sortBy", model.SortBy);
 
                 SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
                 {
@@ -78,31 +91,23 @@ namespace backStage_vue3.Controllers
 
                 List<MemberModel> members = new List<MemberModel>();
 
+                int totalRecords = 0;
+
                 while (await reader.ReadAsync())
                 {
                     MemberModel member = new MemberModel
                     {
-                        Id = Convert.ToInt32(reader["f_mId"]),
-                        Mn = reader["f_mn"].ToString(),
+                        MemberId = Convert.ToInt32(reader["f_memberId"]),
+                        MemberName = reader["f_memberName"].ToString(),
                         Level = Convert.ToByte(reader["f_level"]),
                         TotalSpent = Convert.ToDecimal(reader["f_totalSpent"]),
                         Status = Convert.ToBoolean(reader["f_status"]),
                     };
                     members.Add(member);
-                }
-
-
-                // 移到下一个结果集，獲取總數
-                await reader.NextResultAsync();
-
-                int totalRecords = 0;
-
-                if (await reader.ReadAsync())
-                {
                     totalRecords = Convert.ToInt32(reader["TotalRecords"]);
                 }
 
-                bool hasMore = (pageNumber * pageSize) < totalRecords;
+                bool hasMore = (model.PageNumber * model.PageSize) < totalRecords;
 
                 result.Code = (int)StatusResCode.Success;
                 result.Data = members;
@@ -139,6 +144,12 @@ namespace backStage_vue3.Controllers
         {
             var result = new UpdateStatusResponseDto();
 
+            if (model == null)
+            {
+                result.Code = (int)StatusResCode.MissingParams;
+                return Ok(result);
+            }
+
             bool checkPermission = (UserSession.Permission & (int)Permissions.SuspendMember) == (int)Permissions.SuspendMember;
 
             if (!checkPermission)
@@ -157,9 +168,10 @@ namespace backStage_vue3.Controllers
                 {
                     CommandType = CommandType.StoredProcedure
                 };
-                command.Parameters.AddWithValue("@currentUn", UserSession.Un);
-                command.Parameters.AddWithValue("@currentSessionID", UserSession.SessionID);
-                command.Parameters.AddWithValue("@mId",model.MemberId);
+                command.Parameters.AddWithValue("@currentUserId", UserSession.Id);
+                command.Parameters.AddWithValue("@currentSessionId", UserSession.SessionID);
+                command.Parameters.AddWithValue("@currentPermission", UserSession.Permission);
+                command.Parameters.AddWithValue("@memberId",model.MemberId);
                 command.Parameters.AddWithValue("@status", model.Status);
 
                 SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
@@ -211,6 +223,18 @@ namespace backStage_vue3.Controllers
         {
             var result = new UpdateLevelResponseDto();
 
+            if (model == null)
+            {
+                result.Code = (int)StatusResCode.MissingParams;
+                return Ok(result);
+            }
+
+            if (model.Level > 4)
+            {
+                result.Code = (int)StatusResCode.InvalidFormat;
+                return Ok(result);
+            }
+
             bool checkPermission = (UserSession.Permission & (int)Permissions.SetMemberLevel) == (int)Permissions.SetMemberLevel;
 
             if (!checkPermission)
@@ -229,9 +253,10 @@ namespace backStage_vue3.Controllers
                 {
                     CommandType = CommandType.StoredProcedure
                 };
-                command.Parameters.AddWithValue("@currentUn", UserSession.Un);
-                command.Parameters.AddWithValue("@currentSessionID", UserSession.SessionID);
-                command.Parameters.AddWithValue("@mId", model.MemberId);
+                command.Parameters.AddWithValue("@currentUserId", UserSession.Id);
+                command.Parameters.AddWithValue("@currentSessionId", UserSession.SessionID);
+                command.Parameters.AddWithValue("@currentPermission", UserSession.Permission);
+                command.Parameters.AddWithValue("@memberId", model.MemberId);
                 command.Parameters.AddWithValue("@level", model.Level);
 
                 SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)

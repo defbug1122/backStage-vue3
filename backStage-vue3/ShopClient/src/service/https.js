@@ -28,18 +28,31 @@ instance.interceptors.response.use(
   },
   (error) => {
     if (error.response.status === 401) {
-      sessionStorage.removeItem("token");
-      sessionStorage.removeItem("role");
-      alert("身分驗證失敗，重新登入");
-      router.push("/login");
-      console.log("身分驗證失敗，重新登入");
+      if (error.response.data.code === 5) {
+        sessionStorage.removeItem("token");
+        sessionStorage.removeItem("role");
+        alert("此帳號已在其他地方登入，請重新登入");
+        router.push("/login");
+      } else if (error.response.data.code === 13) {
+        sessionStorage.removeItem("token");
+        sessionStorage.removeItem("role");
+        alert("身分驗證失敗，重新登入");
+        router.push("/login");
+      } else if (error.response.data.code === 12) {
+        sessionStorage.removeItem("token");
+        sessionStorage.removeItem("role");
+        alert("權限被更改，重新登入");
+        router.push("/login");
+      }
     } else if (error.response.status === 403) {
+      router.push("/");
       alert("權限不足，無法操作");
       console.log("權限不足，無法操作");
     } else if (error.response.status === 404) {
       router.push("/notFound");
       console.log("找不到頁面");
     } else if (error.response.status === 500) {
+      router.push("/");
       alert("目前維修中，請聯繫系統管理員");
       console.log("請稍後再試");
     } else {

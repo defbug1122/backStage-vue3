@@ -6,6 +6,7 @@ using System.Data;
 using System.Threading.Tasks;
 using System.Web;
 using backStage_vue3.Utilities;
+using backStage_vue3.Services;
 
 namespace backStage_vue3.Controllers
 {
@@ -23,7 +24,12 @@ namespace backStage_vue3.Controllers
 
             string pattern = @"^[a-zA-Z0-9_-]{4,16}$";
 
-            if (!System.Text.RegularExpressions.Regex.IsMatch(model.Un, pattern) ||
+            if (model.Pwd == null || model.UserName == null) {
+                result.Code = (int)StatusResCode.MissingParams;
+                return Ok(result);
+            }
+
+            if (!System.Text.RegularExpressions.Regex.IsMatch(model.UserName, pattern) ||
                 !System.Text.RegularExpressions.Regex.IsMatch(model.Pwd, pattern))
             {
                 result.Code = (int)StatusResCode.InvalidFormat;
@@ -45,9 +51,9 @@ namespace backStage_vue3.Controllers
                 {
                     CommandType = CommandType.StoredProcedure
                 };
-                command.Parameters.AddWithValue("@un", model.Un);
+                command.Parameters.AddWithValue("@userName", model.UserName);
                 command.Parameters.AddWithValue("@pwd", hashPwd);
-                command.Parameters.AddWithValue("@uuid", HttpContext.Current.Session.SessionID);
+                command.Parameters.AddWithValue("@sessionId", HttpContext.Current.Session.SessionID);
                 SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
                 {
                     Direction = ParameterDirection.Output
@@ -66,12 +72,13 @@ namespace backStage_vue3.Controllers
                     if (reader.HasRows)
                     {
                         reader.Read();
-                        string userId = Convert.ToString(reader["f_id"]);
+                        string userId = Convert.ToString(reader["f_userId"]);
                         string permission = reader["f_permission"].ToString();
 
                         UserSessionModel sessionInfo = new UserSessionModel
                         {
-                            Un = model.Un,
+                            UserName = model.UserName,
+                            Id = Convert.ToInt32(reader["f_userId"]),
                             Permission = Convert.ToInt32(reader["f_permission"]),
                             SessionID = HttpContext.Current.Session.SessionID,
                         };
@@ -80,11 +87,16 @@ namespace backStage_vue3.Controllers
 
                         HttpCookie uuidCookie = new HttpCookie("uuid", HttpContext.Current.Session.SessionID);
                         HttpCookie permissionCookie = new HttpCookie("permission", permission);
-                        HttpCookie currentUserCookie = new HttpCookie("currentUser", model.Un);
+                        HttpCookie currentUserCookie = new HttpCookie("currentUser", model.UserName);
+                        HttpCookie userIdCookie = new HttpCookie("userId", userId);
 
                         HttpContext.Current.Response.Cookies.Add(uuidCookie);
                         HttpContext.Current.Response.Cookies.Add(permissionCookie);
                         HttpContext.Current.Response.Cookies.Add(currentUserCookie);
+                        HttpContext.Current.Response.Cookies.Add(userIdCookie);
+
+                        var sessionService = new UserSessionCacheService();
+                        sessionService.AddUserSession(sessionInfo);
 
                         result.Code = (int)StatusResCode.Success;
                         return Ok(result);

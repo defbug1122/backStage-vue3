@@ -6,8 +6,8 @@
     public class UserDeleteModel
     {
         /// <summary>
-        /// 刪除用戶POST-請求參數-用戶名稱
+        /// 刪除用戶POST-請求參數-用戶編號
         /// </summary>
-        public string Un { get; set; }
+        public int? Id { get; set; }
     }
 }

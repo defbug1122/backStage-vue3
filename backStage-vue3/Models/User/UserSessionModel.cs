@@ -6,9 +6,14 @@
     public class UserSessionModel
     {
         /// <summary>
+        /// 當前登入用戶編號
+        /// </summary>
+       public int Id { get; set; }
+
+        /// <summary>
         /// 當前登入用戶名稱
         /// </summary>
-        public string Un { get; set; }
+        public string UserName { get; set; }
         
         /// <summary>
         /// 當前登入用戶權限

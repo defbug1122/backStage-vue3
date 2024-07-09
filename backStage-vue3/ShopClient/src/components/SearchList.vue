@@ -1,5 +1,5 @@
 <template>
-  <div class="searchable-list">
+  <div class="search-list">
     <div class="search-bar">
       <el-input
         v-model="localSearchTerm"
@@ -13,7 +13,7 @@
           :value="option.value"
         ></el-option>
       </el-select>
-      <el-button @click="handleSearch">查詢</el-button>
+      <el-button @click="HandleSearch">查詢</el-button>
       <el-button v-if="showAddButton" @click="$emit('add')">新增</el-button>
     </div>
 
@@ -47,7 +47,7 @@
 
 <script>
 export default {
-  name: "SearchableList",
+  name: "SearchList",
   props: {
     searchTerm: {
       type: String,
@@ -93,16 +93,18 @@ export default {
     };
   },
   watch: {
+    // 監聽查詢值
     searchTerm(newVal) {
       this.localSearchTerm = newVal;
     },
+    // 監聽排序選項
     sortOptions(newVal) {
       this.localSortBy = newVal.length ? newVal[0].value : null;
     },
   },
   methods: {
     // 查詢功能
-    handleSearch() {
+    HandleSearch() {
       if (this.localSearchTerm.length < 16) {
         this.$emit("search", this.localSearchTerm, 1, this.localSortBy);
       } else {
@@ -118,7 +120,7 @@ export default {
 </script>
 
 <style scoped>
-.searchable-list {
+.search-list {
   padding: 0 20px 20px 20px;
 }
 .search-bar {

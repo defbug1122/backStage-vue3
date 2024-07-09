@@ -1,37 +1,40 @@
 <template>
   <div class="login-container">
-    <h1>後臺管理系統</h1>
+    <div class="login-title">
+      <!-- <img src="/public/login-bg.jpg" alt="bg" /> -->
+    </div>
     <div class="login-form">
+      <h2>後臺管理系統</h2>
       <div class="form-item">
         <div>帳號</div>
-        <input type="text" v-model="un" /><br />
+        <input type="text" v-model="userName" /><br />
       </div>
       <div class="form-item">
         <div>密碼</div>
         <input type="password" v-model="pwd" /><br /><br />
       </div>
-      <input type="submit" value="登入" @click="login" class="login-button" />
+      <input type="submit" value="登入" @click="Login" class="login-button" />
+      <span v-if="errorMsg !== ''" class="error-msg">{{ errorMsg }}</span>
     </div>
-    <span v-if="errorMsg !== ''" class="error-msg">{{ errorMsg }}</span>
   </div>
 </template>
 
 <script>
-import { login } from "@/service/api";
+import { Login } from "@/service/api";
 import { mutations } from "@/store";
 
 export default {
   name: "Login",
   data() {
     return {
-      un: "admin",
+      userName: "admin",
       pwd: "147147",
       errorMsg: "",
       pattern: /^[a-zA-Z0-9_-]{4,16}$/,
     };
   },
   methods: {
-    getCookieValue(cookieName) {
+    GetCookieValue(cookieName) {
       var name = cookieName + "=";
       var decodedCookie = decodeURIComponent(document.cookie);
       var cookieArray = decodedCookie.split(";");
@@ -45,15 +48,15 @@ export default {
     },
 
     // 呼叫登入API
-    async login() {
-      if (this.un === "" || this.pwd === "") {
+    async Login() {
+      if (this.userName === "" || this.pwd === "") {
         this.errorMsg = "請輸入帳號、密碼";
         return;
       } else {
         this.errorMsg = "";
       }
 
-      if (!this.pattern.test(this.un) || !this.pattern.test(this.pwd)) {
+      if (!this.pattern.test(this.userName) || !this.pattern.test(this.pwd)) {
         this.errorMsg =
           "帳號或密碼必須是4-16個字符，只能包含字母、數字、下劃線和連字符";
         return;
@@ -62,54 +65,30 @@ export default {
       }
 
       try {
-        const response = await login({ un: this.un, pwd: this.pwd });
+        const response = await Login({
+          userName: this.userName,
+          pwd: this.pwd,
+        });
         if (response.data.code === 0) {
           this.errorMsg = "";
-          sessionStorage.setItem("token", this.getCookieValue("uuid"));
-          sessionStorage.setItem("role", this.getCookieValue("permission"));
+          sessionStorage.setItem("id", this.GetCookieValue("userId"));
+          sessionStorage.setItem("token", this.GetCookieValue("uuid"));
+          sessionStorage.setItem("role", this.GetCookieValue("permission"));
           sessionStorage.setItem(
             "currentUser",
-            this.getCookieValue("currentUser")
+            this.GetCookieValue("currentUser")
           );
+          const id = sessionStorage.getItem("id");
           const role = sessionStorage.getItem("role");
           const user = sessionStorage.getItem("currentUser");
           const token = sessionStorage.getItem("token");
-          mutations.setUserInfo({
+          mutations.SetUserInfo({
+            id: id,
             user: user,
             role: role,
             token: token,
           });
-
-          const permissions = parseInt(role, 10);
-
-          if (
-            (permissions & 1) === 1 ||
-            (permissions & 2) === 2 ||
-            (permissions & 4) === 4 ||
-            (permissions & 8) === 8
-          ) {
-            this.$router.push("/account");
-          } else if (
-            (permissions & 16) === 16 ||
-            (permissions & 32) === 32 ||
-            (permissions & 64) === 64
-          ) {
-            this.$router.push("/member");
-          } else if (
-            (permissions & 128) === 128 ||
-            (permissions & 256) === 256 ||
-            (permissions & 512) === 512 ||
-            (permissions & 1024) === 1024
-          ) {
-            this.$router.push("/product");
-          } else if (
-            (permissions & 2048) === 2048 ||
-            (permissions & 4096) === 4096 ||
-            (permissions & 8192) === 8192
-          ) {
-            this.$router.push("/order");
-          }
-
+          this.$router.push("/");
           this.$message({
             message: "登入成功",
             type: "success",
@@ -131,19 +110,33 @@ export default {
 .login-container {
   height: 100vh;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
+  background-color: #fffef2;
+}
+
+.login-title {
+  background-color: #1a1915;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-image: url("/public/login-bg-2.jpg");
+}
+
+h2 {
+  text-align: center;
 }
 
 .login-form {
-  background: #fff;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   width: 100%;
-  max-width: 380px;
+  max-width: 430px;
   text-align: left;
-  padding: 15px 30px;
+  padding: 15px 50px;
 }
 
 .form-item {
@@ -162,18 +155,20 @@ input {
   padding: 0.75rem;
   border: none;
   border-radius: 4px;
-  background-color: #007bff;
+  background-color: #333333;
   color: #fff;
   font-size: 1rem;
   cursor: pointer;
 }
 
 .login-button:hover {
-  background-color: #0056b3;
+  background-color: #000000;
 }
 
 .error-msg {
-  color: red;
-  margin-top: 1rem;
+  color: #ca432f;
+  display: flex;
+  justify-content: center;
+  margin-top: 15px;
 }
 </style>
