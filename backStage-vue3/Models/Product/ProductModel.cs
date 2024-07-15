@@ -21,9 +21,19 @@ namespace backStage_vue3.Models
         public string Name { get; set; }
 
         /// <summary>
-        /// 商品列表-商品圖片
+        /// 商品列表-商品圖片1
         /// </summary>
-        public string ImagePath { get; set; }
+        public string ImagePath1 { get; set; }
+
+        /// <summary>
+        /// 商品列表-商品圖片2
+        /// </summary>
+        public string ImagePath2 { get; set; }
+
+        /// <summary>
+        /// 商品列表-商品圖片3
+        /// </summary>
+        public string ImagePath3 { get; set; }
 
         /// <summary>
         /// 商品列表-商品類型
@@ -49,6 +59,11 @@ namespace backStage_vue3.Models
         /// 商品列表-商品庫存
         /// </summary>
         public int Stock { get; set; }
+
+        /// <summary>
+        /// 商品列表-庫存量預警
+        /// </summary>
+        public bool StockWarning { get; set; }
     }
 
     /// <summary>

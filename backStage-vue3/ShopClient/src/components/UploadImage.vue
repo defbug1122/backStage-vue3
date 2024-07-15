@@ -2,7 +2,6 @@
   <div>
     <el-upload
       class="upload-demo"
-      action="#"
       :on-success="HandleSuccess"
       :before-upload="BeforeUpload"
     >
@@ -11,20 +10,6 @@
         只能上傳jpg/png文件，且不超過2MB
       </div>
     </el-upload>
-    <!-- <el-upload
-      class="upload-demo"
-      action="#"
-      list-type="picture-card"
-      :auto-upload="false"
-      :on-change="BeforeUpload"
-      accept=".jpg, .png, .jpeg"
-      :limit="1"
-    >
-      <el-button slot="trigger" size="small" type="primary">選擇圖片</el-button>
-      <div slot="tip" class="el-upload__tip">
-        只能上傳jpg/png文件，且不超過2MB
-      </div>
-    </el-upload> -->
   </div>
 </template>
 
@@ -33,6 +18,7 @@ export default {
   name: "UploadImage",
   methods: {
     HandleSuccess(response, file, fileList) {
+      console.log("response---", response);
       this.$emit("upload-success", response);
     },
     BeforeUpload(file) {

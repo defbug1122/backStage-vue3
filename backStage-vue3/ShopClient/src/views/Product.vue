@@ -9,7 +9,7 @@
       :table-data="tableData"
       :has-more="hasMore"
       :page-number="pageNumber"
-      :show-add-button="true"
+      :show-add-button="CanShowAddButton()"
       @search="FetchProducts"
       @prevPage="HandlePrevPage"
       @nextPage="HandleNextPage"
@@ -18,14 +18,56 @@
       <template v-slot:table-rows="{ tableData }">
         <tr v-for="(item, index) in tableData" :key="index">
           <td>{{ item.name }}</td>
-          <td><img :src="item.imagePath" alt="product image" width="100" /></td>
+          <td>
+            <img
+              @error="SetPlaceholder($event)"
+              :src="GetImageUrl(item.imagePath1)"
+              alt="product image"
+              width="100"
+            />
+          </td>
           <td>{{ GetTypeName(item.type) }}</td>
+          <td>{{ item.describe }}</td>
           <td>{{ item.price }}</td>
           <td>{{ item.active ? "是" : "否" }}</td>
-          <td>{{ item.describe }}</td>
-          <td>{{ item.stock }}</td>
+          <td class="stock">
+            <i v-if="item.stock < safetyStock" class="el-icon-warning"> </i>
+            <span class="tips">安全庫存量建議大於5</span>
+            {{ item.stock }}
+          </td>
           <td>
-            <el-button type="text" @click="OpenEditModal(item)">編輯</el-button>
+            <el-button
+              v-if="(currentUser.permission & 1024) === 1024"
+              plain
+              @click="OpenEditModal(item)"
+            >
+              編輯
+            </el-button>
+            <el-popover
+              v-if="(currentUser.permission & 2048) === 2048"
+              placement="top"
+              width="160"
+              trigger="click"
+              :key="item.productId"
+              v-model="popoversVisible[item.productId]"
+            >
+              <p>確認刪除此用戶？</p>
+              <div class="btn-group" style="text-align: right">
+                <el-button
+                  size="mini"
+                  type="text"
+                  @click="popoversVisible[item.productId] = false"
+                  >取消</el-button
+                >
+                <el-button
+                  type="primary"
+                  size="mini"
+                  @click="DeleteProduct(item.productId)"
+                  >確認</el-button
+                >
+              </div>
+              <el-button slot="reference" type="danger" plain>刪除</el-button>
+            </el-popover>
           </td>
         </tr>
       </template>
@@ -41,10 +83,17 @@
 </template>
 
 <script>
-import { GetProductList, CreateProduct } from "@/service/api";
+import {
+  GetProductList,
+  CreateProduct,
+  EditProduct,
+  DeleteProduct,
+} from "@/service/api";
 import SearchList from "@/components/SearchList.vue";
 import UserInfo from "@/components/UserInfo.vue";
 import ProductModal from "@/components/Modal/ProductModal.vue";
+import { store } from "@/store";
+import { config } from "@/config";
 
 export default {
   components: {
@@ -54,6 +103,10 @@ export default {
   },
   data() {
     return {
+      safetyStock: config.safetyStock,
+      currentUser: {
+        permission: store.currentUser.role,
+      },
       searchTerm: "",
       sortOptions: [
         { label: "按商品名稱排序", value: 1 },
@@ -63,20 +116,25 @@ export default {
         "名稱",
         "圖片",
         "類型",
+        "描述",
         "價格",
         "是否開放",
-        "描述",
         "庫存量",
         "操作",
       ],
+      popoversVisible: {},
       tableData: [],
       hasMore: false,
       pageNumber: 1,
+      pageSize: 10,
       showAddModal: false,
       isEditMode: false,
       currentProduct: {
         name: "",
-        imagePath: "",
+        images: [],
+        imagePath1: "",
+        imagePath2: "",
+        imagePath3: "",
         type: null,
         price: 0,
         active: false,
@@ -88,6 +146,7 @@ export default {
         { label: "臉部類", value: 2 },
         { label: "身體類", value: 3 },
       ],
+      placeholderImage: "/public/placeholder.png",
     };
   },
   methods: {
@@ -120,32 +179,34 @@ export default {
         this.hasMore = false;
       }
     },
-
     HandlePrevPage(searchTerm, sortBy) {
       if (this.pageNumber > 1) {
         this.pageNumber -= 1;
         this.FetchProducts(searchTerm, this.pageNumber, sortBy);
       }
     },
-
     HandleNextPage(searchTerm, sortBy) {
       if (this.hasMore) {
         this.pageNumber += 1;
         this.FetchProducts(searchTerm, this.pageNumber, sortBy);
       }
     },
-
     // 產品類型名稱處理
     GetTypeName(type) {
       const foundType = this.typeMap.find((v) => v.value === type);
       return foundType ? foundType.label : "未知種類";
     },
-
+    CanShowAddButton() {
+      return (this.currentUser.permission & 256) === 256;
+    },
     OpenAddModal() {
       this.isEditMode = false;
       this.currentProduct = {
         name: "",
-        imagePath: "",
+        images: [],
+        imagePath1: "",
+        imagePath2: "",
+        imagePath3: "",
         type: null,
         price: 0,
         active: false,
@@ -156,7 +217,14 @@ export default {
     },
     OpenEditModal(product) {
       this.isEditMode = true;
-      this.currentProduct = { ...product };
+      this.currentProduct = {
+        ...product,
+        images: [
+          { file: null, url: product.imagePath1 },
+          { file: null, url: product.imagePath2 },
+          { file: null, url: product.imagePath3 },
+        ].filter((image) => image.url),
+      };
       this.showAddModal = true;
     },
     CloseAddModal() {
@@ -165,25 +233,48 @@ export default {
     async SaveProduct(product) {
       // 編輯商品
       if (this.isEditMode) {
-        axios
-          .put(`/api/product/${product.productId}`, product)
-          .then((response) => {
+        const response = await EditProduct({
+          productId: product.productId,
+          name: product.name,
+          imagePath1: product.imagePath1,
+          imagePath2: product.imagePath2,
+          imagePath3: product.imagePath3,
+          price: product.price,
+          type: product.type,
+          describe: product.describe,
+          stock: product.stock,
+          active: product.active,
+        });
+
+        try {
+          if (response.data.code === 0) {
             this.showAddModal = false;
             this.FetchProducts(
               this.searchTerm,
               this.pageNumber,
               this.sortOptions[0].value
             );
-          })
-          .catch((error) => {
-            console.error(error);
+            this.$message({
+              message: "編輯商品成功",
+              type: "success",
+              duration: 1200,
+            });
+          }
+        } catch (error) {
+          console.error("error", error);
+          this.$message({
+            message: "編輯商品失敗",
+            type: "error",
+            duration: 1200,
           });
+        }
       } else {
-        console.log("pro----", product);
         // 新增商品
         const response = await CreateProduct({
           name: product.name,
-          imageFile: "",
+          imagePath1: product.imagePath1,
+          imagePath2: product.imagePath2,
+          imagePath3: product.imagePath3,
           price: product.price,
           type: product.type,
           describe: product.describe,
@@ -214,6 +305,42 @@ export default {
         }
       }
     },
+    GetImageUrl(relativePath) {
+      return `${import.meta.env.VITE_API_URL}/Uploads/${relativePath}`;
+    },
+    SetPlaceholder(event) {
+      event.target.src = this.placeholderImage;
+    },
+    async DeleteProduct(id) {
+      try {
+        const response = await DeleteProduct({ productId: id });
+        if (response.data.code === 0) {
+          this.FetchProducts(
+            this.searchTerm,
+            this.pageNumber,
+            this.sortOptions[0].value
+          );
+          this.$message({
+            message: "商品刪除成功",
+            type: "success",
+            duration: 2000,
+          });
+        } else {
+          this.$message({
+            message: "商品刪除失敗",
+            type: "error",
+            duration: 2000,
+          });
+        }
+      } catch (error) {
+        console.error("error", error);
+        this.$message({
+          message: "商品刪除失敗",
+          type: "error",
+          duration: 2000,
+        });
+      }
+    },
   },
   created() {
     this.FetchProducts(
@@ -224,3 +351,42 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.el-icon-warning {
+  color: #ca432f;
+  position: relative;
+  cursor: pointer;
+}
+
+.tips {
+  display: none;
+}
+
+.el-icon-warning:hover + .tips {
+  display: block;
+  position: absolute;
+  top: -30px;
+  left: 0;
+  padding: 12px 20px;
+  font-size: 14px;
+  border-radius: 4px;
+  background-color: #fff;
+  filter: drop-shadow(0px 0px 10px #b2b2b2);
+  color: #ca432f;
+  width: 70px;
+}
+
+.tip::after {
+  content: "";
+  position: absolute;
+  border: 20px solid;
+  border-color: #fff transparent transparent;
+  bottom: -40px;
+  left: calc(50% - 20px);
+}
+
+.stock {
+  position: relative;
+}
+</style>

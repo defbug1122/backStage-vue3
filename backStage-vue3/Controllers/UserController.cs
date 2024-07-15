@@ -42,6 +42,7 @@ namespace backStage_vue3.Controllers
                 return Ok(result);
             }
 
+            // 關鍵字搜尋不能超過16個字、頁數必須大於1、筆數只能查詢剛好10筆
             if ((model.SearchTerm != null && model.SearchTerm.Length > 16) || model.PageNumber <= 0 || model.PageSize != 10)
             {
                 result.Code = (int)StatusResCode.InvalidFormat;
@@ -75,7 +76,7 @@ namespace backStage_vue3.Controllers
 
                 int statusCode = (int)statusCodeParam.Value;
 
-                if (statusCode == 5)
+                if (statusCode == (int)StatusResCode.UnMatchSessionId)
                 {
                     return StatusCode(HttpStatusCode.Unauthorized);
                 }
@@ -156,8 +157,8 @@ namespace backStage_vue3.Controllers
                 return Ok(result);
             }
 
-            // 檢查 model.Permission 不能為空，並且不能高於 32766
-            if (model.Permission == 0 || model.Permission > 32766 || (model.Permission & (int)Permissions.SuperPermission) == (int)Permissions.SuperPermission)
+            // 檢查 model.Permission 不能為空，並且不能高於最大等級
+            if (model.Permission == 0 || model.Permission > (int)Permissions.MaxPermission || (model.Permission & (int)Permissions.SuperPermission) == (int)Permissions.SuperPermission)
             {
                 result.Code = (int)StatusResCode.SetPermissionFailed;
                 return Ok(result);
@@ -219,12 +220,12 @@ namespace backStage_vue3.Controllers
 
                 int statusCode = (int)statusCodeParam.Value;
 
-                if (statusCode == 0)
+                if (statusCode == (int)StatusResCode.Success)
                 {
                     result.Code = (int)StatusResCode.Success;
                     return Ok(result);
                 }
-                else if (statusCode == 5)
+                else if (statusCode == (int)StatusResCode.UnMatchSessionId)
                 {
                     return StatusCode(HttpStatusCode.Unauthorized);
                 }
@@ -302,12 +303,12 @@ namespace backStage_vue3.Controllers
 
                 int statusCode = (int)statusCodeParam.Value;
 
-                if (statusCode == 0)
+                if (statusCode == (int)StatusResCode.Success)
                 {
                     result.Code = (int)StatusResCode.Success;
                     return Ok(result);
                 }
-                else if (statusCode == 5)
+                else if (statusCode == (int)StatusResCode.UnMatchSessionId)
                 {
                     return StatusCode(HttpStatusCode.Unauthorized);
                 }
@@ -349,7 +350,7 @@ namespace backStage_vue3.Controllers
                 return Ok(result);
             }
 
-            // 檢查 model.Permission 不能為空，並且不能高於 32766
+            // 檢查 model.Permission 不能為空，並且不能高於最大權限
             if (model.Permission > 32766 || (model.Permission & (int)Permissions.SuperPermission) == (int)Permissions.SuperPermission)
             {
                 result.Code = (int)StatusResCode.SetPermissionFailed;
@@ -411,7 +412,7 @@ namespace backStage_vue3.Controllers
 
                 int statusCode = (int)statusCodeParam.Value;
 
-                if (statusCode == 0)
+                if (statusCode == (int)StatusResCode.Success)
                 {
                     _sessionService.UpdateUserPermission(model.Id, model.Permission);
 
@@ -425,7 +426,7 @@ namespace backStage_vue3.Controllers
                     result.Code = (int)StatusResCode.Success;
                     return Ok(result);
                 }
-                else if (statusCode == 5)
+                else if (statusCode == (int)StatusResCode.UnMatchSessionId)
                 {
                     return StatusCode(HttpStatusCode.Unauthorized);
                 }
@@ -505,12 +506,12 @@ namespace backStage_vue3.Controllers
 
                 int statusCode = (int)statusCodeParam.Value;
 
-                if (statusCode == 0)
+                if (statusCode == (int)StatusResCode.Success)
                 {
                     result.Code = (int)StatusResCode.Success;
                     return Ok(result);
                 }
-                else if (statusCode == 5)
+                else if (statusCode == (int)StatusResCode.UnMatchSessionId)
                 {
                     return StatusCode(HttpStatusCode.Unauthorized);
                 }
@@ -567,7 +568,7 @@ namespace backStage_vue3.Controllers
                 await command.ExecuteNonQueryAsync();
                 int statusCode = (int)statusCodeParam.Value;
 
-                if (statusCode == 0)
+                if (statusCode == (int)StatusResCode.Success)
                 {
                     // 清理緩存
                     _sessionService.RemoveUserSession(UserSession.Id);

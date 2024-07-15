@@ -81,7 +81,6 @@
     <Build Include="dbo\Stored Procedures\pro_bs_editMemberStatus.sql" />
     <Build Include="dbo\Stored Procedures\pro_bs_editMemberLevel.sql" />
     <Build Include="dbo\Tables\t_product.sql" />
-    <Build Include="dbo\Tables\t_order_detail.sql" />
     <Build Include="dbo\Tables\t_order.sql" />
     <Build Include="dbo\Stored Procedures\pro_bs_getAllProducts.sql">
       <QuotedIdentifier>Off</QuotedIdentifier>
@@ -90,5 +89,8 @@
     <Build Include="dbo\Stored Procedures\pro_bs_editUserInfo.sql" />
     <Build Include="dbo\Stored Procedures\pro_bs_addNewProduct.sql" />
     <Build Include="dbo\Stored Procedures\EditManualMemberLevels.sql" />
+    <Build Include="dbo\Tables\t_orderDetail.sql" />
+    <Build Include="dbo\Stored Procedures\pro_bs_editProduct.sql" />
+    <Build Include="dbo\Stored Procedures\pro_bs_delProduct.sql" />
   </ItemGroup>
 </Project>

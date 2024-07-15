@@ -70,3 +70,8 @@ export const CreateProduct = (params) => {
 export const EditProduct = (params) => {
   return https.post("api/product/edit", params);
 };
+
+// 刪除商品API
+export const DeleteProduct = (params) => {
+  return https.post("api/product/delete", params);
+};

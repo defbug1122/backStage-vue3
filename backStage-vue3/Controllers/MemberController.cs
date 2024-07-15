@@ -31,6 +31,7 @@ namespace backStage_vue3.Controllers
                 return Ok(result);
             }
 
+            // 關鍵字搜尋不能超過16個字、頁數必須大於1、筆數只能查詢剛好10筆
             if ((model.SearchTerm != null && model.SearchTerm.Length > 16) || model.PageNumber <= 0 || model.PageSize != 10)
             {
                 result.Code = (int)StatusResCode.InvalidFormat;
@@ -42,12 +43,6 @@ namespace backStage_vue3.Controllers
             if (!checkPermission)
             {
                 return StatusCode(HttpStatusCode.Forbidden);
-            }
-
-            if (model.SearchTerm != null && model.SearchTerm.Length > 16)
-            {
-                result.Code = (int)StatusResCode.InvalidFormat;
-                return Ok(result);
             }
 
             SqlConnection connection = null;
@@ -79,7 +74,7 @@ namespace backStage_vue3.Controllers
                 int statusCode = (int)statusCodeParam.Value;
 
 
-                if (statusCode == 5)
+                if (statusCode == (int)StatusResCode.UnMatchSessionId)
                 {
                     return StatusCode(HttpStatusCode.Unauthorized);
                 }
@@ -178,12 +173,12 @@ namespace backStage_vue3.Controllers
 
                 int statusCode = (int)statusCodeParam.Value;
 
-                if (statusCode == 0)
+                if (statusCode == (int)StatusResCode.Success)
                 {
                     result.Code = (int)StatusResCode.Success;
                     return Ok(result);
                 }
-                else if (statusCode == 5)
+                else if (statusCode == (int)StatusResCode.UnMatchSessionId)
                 {
                     return StatusCode(HttpStatusCode.Unauthorized);
                 }
@@ -223,6 +218,7 @@ namespace backStage_vue3.Controllers
                 return Ok(result);
             }
 
+            // 目前只有4個會員等級狀態
             if (model.Level > 4)
             {
                 result.Code = (int)StatusResCode.InvalidFormat;
@@ -260,12 +256,12 @@ namespace backStage_vue3.Controllers
 
                 int statusCode = (int)statusCodeParam.Value;
 
-                if (statusCode == 0)
+                if (statusCode == (int)StatusResCode.Success)
                 {
                     result.Code = (int)StatusResCode.Success;
                     return Ok(result);
                 }
-                else if (statusCode == 5)
+                else if (statusCode == (int)StatusResCode.UnMatchSessionId)
                 {
                     return StatusCode(HttpStatusCode.Unauthorized);
                 }

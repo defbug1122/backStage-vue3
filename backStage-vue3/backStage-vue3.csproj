@@ -315,9 +315,13 @@
     <Compile Include="Models\Member\UpdateStatusModel.cs" />
     <Compile Include="Models\Member\UpdateStatusResponseDto.cs" />
     <Compile Include="Models\Product\AddProductResponseDto.cs" />
+    <Compile Include="Models\Product\DeleteProductModel.cs" />
+    <Compile Include="Models\Product\DeleteProductResponseDto.cs" />
     <Compile Include="Models\Product\GetProductResponseDto.cs" />
     <Compile Include="Models\Product\ProductAddModel.cs" />
     <Compile Include="Models\Product\ProductModel.cs" />
+    <Compile Include="Models\Product\UpdateProductModel.cs" />
+    <Compile Include="Models\Product\UpdateProductResponseDto.cs" />
     <Compile Include="Models\User\AddUserResponseDto.cs" />
     <Compile Include="Models\User\DeleteUserResponseDto.cs" />
     <Compile Include="Models\User\GetUserResponseDto.cs" />
@@ -402,7 +406,7 @@ echo Running npm install...
 call npm install || (echo "npm install failed" &amp;&amp; exit 1)
 
 echo Running npm run build...
-call npm run build || (echo "npm run build failed" &amp;&amp; exit 1)</PreBuildEvent>
+call npm run build:dev || (echo "npm run build failed" &amp;&amp; exit 1)</PreBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.

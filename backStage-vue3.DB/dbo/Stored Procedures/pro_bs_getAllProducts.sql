@@ -12,7 +12,7 @@ BEGIN
     DECLARE @offset INT = (@pageNumber - 1) * @pageSize;
 
     -- 獲取用戶列表
-    SELECT f_productId, f_name, f_imagePath, f_type, f_price, f_active, f_describe, f_stock, COUNT(*) OVER() AS TotalRecords FROM t_product WITH(NOLOCK)
+    SELECT f_productId, f_name, f_imagePath1, f_imagePath2, f_imagePath3, f_type, f_price, f_active, f_describe, f_stock, COUNT(*) OVER() AS TotalRecords FROM t_product WITH(NOLOCK)
 
     WHERE 
         f_name LIKE '%' + @searchTerm + '%'

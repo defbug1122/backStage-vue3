@@ -65,7 +65,7 @@ namespace backStage_vue3.Controllers
                 int statusCode = (int)statusCodeParam.Value;
                 string Id = HttpContext.Current.Session.SessionID;
 
-                if (statusCode == 0)
+                if (statusCode == (int)StatusResCode.Success)
                 {
                     reader = await command.ExecuteReaderAsync();
 

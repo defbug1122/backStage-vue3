@@ -10,7 +10,7 @@ namespace backStage_vue3.Services
     public class UserSessionCacheService
     {
         /// <summary>
-        /// 創立一個緩存實例，名為 UserSessionCache
+        /// 創立一個緩存實例只能在內部被讀取，名為 UserSessionCache
         /// </summary>
         private static readonly MemoryCache UserSessionCache = new MemoryCache("UserSessionCache");
 
@@ -27,7 +27,7 @@ namespace backStage_vue3.Services
         {
             var cacheItemPolicy = new CacheItemPolicy
             {
-                AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(20) // 設置緩存時間，這邊是20分鐘會過期
+                SlidingExpiration = TimeSpan.FromMinutes(20) // 設置緩存時間，20分鐘沒有活動會過期
             };
 
             // 進入lock 區塊，會去檢查此 key 是否被佔用，如果被佔用，就要排隊等待
@@ -83,7 +83,7 @@ namespace backStage_vue3.Services
 
                     UserSessionCache.Set(updatedSession.Id.ToString(), updatedSession, new CacheItemPolicy
                     {
-                        AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(20)
+                        SlidingExpiration = TimeSpan.FromMinutes(20) // 設置緩存時間，20分鐘沒有活動會過期
                     });
                 }
             }

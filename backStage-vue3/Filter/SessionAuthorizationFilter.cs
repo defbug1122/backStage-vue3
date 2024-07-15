@@ -16,17 +16,17 @@ namespace backStage_vue3.Filter
         public override void OnAuthorization(HttpActionContext actionContext)
         {
             var session = HttpContext.Current.Session["userSessionInfo"] as UserSessionModel;
+            var sessionService = new UserSessionCacheService();
+            var cachedSession = sessionService.GetUserSession(session.Id);
             var result = new UserSessionResponseDto();
 
-            if (session == null) {
+            if (session == null || cachedSession == null) {
                 result.Code = (int)StatusResCode.MissingAuthentication;
                 actionContext.Response = actionContext.Request.CreateResponse(HttpStatusCode.Unauthorized, result);
                 return;
             }
 
-            var sessionService = new UserSessionCacheService();
-            var cachedSession = sessionService.GetUserSession(session.Id);
-
+            // 不重複登入判斷(後者踢前者) 
             if (session.SessionID != cachedSession.SessionID)
             {
                 result.Code = (int)StatusResCode.UnMatchSessionId;
@@ -35,6 +35,7 @@ namespace backStage_vue3.Filter
                 actionContext.Response = actionContext.Request.CreateResponse(HttpStatusCode.Unauthorized, result);
             }
 
+            // 用戶權限被更改，須強制重新登入
             if (session.Permission != cachedSession.Permission)
             {
                 result.Code = (int)StatusResCode.PermissionChange;
@@ -42,7 +43,6 @@ namespace backStage_vue3.Filter
                 HttpContext.Current.Session.Clear();
                 actionContext.Response = actionContext.Request.CreateResponse(HttpStatusCode.Unauthorized, result);
             }
-
         }
     }
 }

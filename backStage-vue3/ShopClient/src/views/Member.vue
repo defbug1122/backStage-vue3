@@ -68,7 +68,7 @@ import {
 } from "@/service/api";
 import SearchList from "@/components/SearchList.vue";
 import UserInfo from "@/components/UserInfo.vue";
-import { store, mutations } from "@/store";
+import { store } from "@/store";
 
 export default {
   name: "Member",
@@ -78,7 +78,7 @@ export default {
   },
   data() {
     return {
-      tableTitle: ["會員編號", "名稱", "等級", "消費金額", "狀態"],
+      tableTitle: ["會員編號", "名稱", "等級", "累計消費金額", "狀態"],
       currentUser: {
         user: store.currentUser.user,
         permission: store.currentUser.role,

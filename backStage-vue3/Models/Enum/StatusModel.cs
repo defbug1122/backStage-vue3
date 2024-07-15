@@ -78,6 +78,21 @@ namespace backStage_vue3.Models
         /// <summary>
         /// 缺少身分驗證
         /// </summary>
-        MissingAuthentication = 13
+        MissingAuthentication = 13,
+
+        /// <summary>
+        /// 找不到該項商品
+        /// </summary>
+        NotFoundProduct = 14,
+
+        /// <summary>
+        /// 圖片檔案太大
+        /// </summary>
+        ImageFileIsLarge = 15,
+
+        /// <summary>
+        /// 圖片上傳格式錯誤
+        /// </summary>
+        ImageFormatError = 16
     }
 }

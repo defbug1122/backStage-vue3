@@ -1,4 +1,4 @@
-﻿CREATE TABLE [dbo].[t_order_detail] (
+﻿CREATE TABLE [dbo].[t_orderDetail] (
     [f_orderProductId] INT IDENTITY (1, 1) NOT NULL,
     [f_orderId]        INT NOT NULL,
     [f_productId]      INT NOT NULL,

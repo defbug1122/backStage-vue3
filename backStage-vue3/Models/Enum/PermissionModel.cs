@@ -77,5 +77,13 @@ namespace backStage_vue3.Models
         /// 刪除訂單
         /// </summary>
         DeleteOrder = 16384,
+
+        /// <summary>
+        /// 所有權限的组合（不包括 SuperPermission）
+        /// </summary>
+        MaxPermission = AddAccount | DeleteAccount | EditAccount | ViewAccount |
+                        ViewMember | SetMemberLevel | SuspendMember | AddProduct |
+                        ViewProduct | EditProduct | DeleteProduct | ViewOrder |
+                        EditOrder | DeleteOrder
     }
 }
