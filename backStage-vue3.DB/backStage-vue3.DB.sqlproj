@@ -88,9 +88,10 @@
     <Build Include="dbo\Stored Procedures\pro_bs_editUserRole.sql" />
     <Build Include="dbo\Stored Procedures\pro_bs_editUserInfo.sql" />
     <Build Include="dbo\Stored Procedures\pro_bs_addNewProduct.sql" />
-    <Build Include="dbo\Stored Procedures\EditManualMemberLevels.sql" />
     <Build Include="dbo\Tables\t_orderDetail.sql" />
     <Build Include="dbo\Stored Procedures\pro_bs_editProduct.sql" />
     <Build Include="dbo\Stored Procedures\pro_bs_delProduct.sql" />
+    <Build Include="dbo\Stored Procedures\pro_bs_getProductImagePaths.sql" />
+    <Build Include="dbo\Stored Procedures\pro_bs_editManualMemberLevels.sql" />
   </ItemGroup>
 </Project>

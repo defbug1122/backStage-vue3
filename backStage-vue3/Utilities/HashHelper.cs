@@ -7,8 +7,16 @@ using System.Text;
 
 namespace backStage_vue3.Utilities
 {
+    /// <summary>
+    /// 雜湊處理
+    /// </summary>
     public static class HashHelper
     {
+        /// <summary>
+        /// SHA256 加密
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
         public static string ComputeSha256Hash(string data)
         {
             SHA256 sha256Hash = SHA256.Create();

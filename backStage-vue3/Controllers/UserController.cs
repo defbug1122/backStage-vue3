@@ -143,7 +143,7 @@ namespace backStage_vue3.Controllers
                 return StatusCode(HttpStatusCode.Forbidden);
             }
 
-            if (model.UserName == null || model.Pwd == null || model.Permission == null)
+            if (model.UserName == null || model.Pwd == null || model.Permission == 0)
             {
                 result.Code = (int)StatusResCode.MissingParams;
                 return Ok(result);
@@ -157,10 +157,26 @@ namespace backStage_vue3.Controllers
                 return Ok(result);
             }
 
-            // 檢查 model.Permission 不能為空，並且不能高於最大等級
-            if (model.Permission == 0 || model.Permission > (int)Permissions.MaxPermission || (model.Permission & (int)Permissions.SuperPermission) == (int)Permissions.SuperPermission)
+            if (model.Permission == 0 || (model.Permission & (int)Permissions.SuperPermission) == (int)Permissions.SuperPermission)
             {
                 result.Code = (int)StatusResCode.SetPermissionFailed;
+                return Ok(result);
+            }
+
+            string inputString = model.Permission.ToString();
+
+            // 判斷權限值是否有效
+            if (Enum.TryParse(inputString, out Permissions permission))
+            {
+                if (!IsValidPermissions(permission))
+                {
+                    result.Code = (int)StatusResCode.SetPermissionFailed;
+                    return Ok(result);
+                }
+            } 
+            else
+            {
+                result.Code = (int)StatusResCode.InvalidFormat;
                 return Ok(result);
             }
 
@@ -344,16 +360,32 @@ namespace backStage_vue3.Controllers
         {
             var result = new UserEditRoleResponseDto();
 
-            if (model.Id == 0 || model.Permission == 0)
+            if (model.Id == 0)
             {
                 result.Code = (int)StatusResCode.MissingParams;
                 return Ok(result);
             }
 
-            // 檢查 model.Permission 不能為空，並且不能高於最大權限
-            if (model.Permission > 32766 || (model.Permission & (int)Permissions.SuperPermission) == (int)Permissions.SuperPermission)
+            if ((model.Permission & (int)Permissions.SuperPermission) == (int)Permissions.SuperPermission)
             {
                 result.Code = (int)StatusResCode.SetPermissionFailed;
+                return Ok(result);
+            }
+
+            string inputString = model.Permission.ToString();
+
+            // 判斷權限值是否有效
+            if (Enum.TryParse(inputString, out Permissions permission))
+            {
+                if (!IsValidPermissions(permission))
+                {
+                    result.Code = (int)StatusResCode.SetPermissionFailed;
+                    return Ok(result);
+                }
+            }
+            else
+            {
+                result.Code = (int)StatusResCode.InvalidFormat;
                 return Ok(result);
             }
 
@@ -628,6 +660,44 @@ namespace backStage_vue3.Controllers
                     command.Parameters.Clear();
                 }
             }
+        }
+
+        /// <summary>
+        /// 判斷輸入權限值是否有效
+        /// </summary>
+        /// <param name="permission"></param>
+        /// <returns></returns>
+        private static bool IsValidPermissions(Permissions permission)
+        {
+            // 獲取所有 Enum 定義權限的值
+            var allValues = Enum.GetValues(typeof(Permissions));
+
+            // 初始化一個變量來存儲所有有效的權限值
+            int validPermissions = 0;
+
+            // 將定義好的每個權限值拿來使用
+            foreach (var value in allValues)
+            {
+                // 當前的權限值
+                Permissions currentPermission = (Permissions)value;
+
+                // 累加所有有效的權限值
+                validPermissions |= (int)currentPermission;  
+
+                // 如果输入的權限包含當前權限值
+                if ((permission & currentPermission) != 0 && (permission & currentPermission) != currentPermission)
+                {
+                    return false;
+                }
+            }
+
+            // 確保輸入的權限值沒有包含任何未定義的權限值
+            if (((int)permission & ~validPermissions) != 0)
+            {
+                return false;
+            }
+
+            return true;
         }
     }
 }

@@ -18,5 +18,10 @@ namespace backStage_vue3.Models
         /// 回應是否還有下一頁
         /// </summary>
         public bool HasMore { get; set; }
+
+        /// <summary>
+        /// 商品安全庫存量
+        /// </summary>
+        public int SafetyStock { get; set; }
     }
 }

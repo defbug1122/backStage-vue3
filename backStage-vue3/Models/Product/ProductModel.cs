@@ -59,11 +59,6 @@ namespace backStage_vue3.Models
         /// 商品列表-商品庫存
         /// </summary>
         public int Stock { get; set; }
-
-        /// <summary>
-        /// 商品列表-庫存量預警
-        /// </summary>
-        public bool StockWarning { get; set; }
     }
 
     /// <summary>

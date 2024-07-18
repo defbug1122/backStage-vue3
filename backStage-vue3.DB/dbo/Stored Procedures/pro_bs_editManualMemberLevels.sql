@@ -1,4 +1,4 @@
-﻿CREATE PROCEDURE [dbo].[EditManualMemberLevels]
+﻿CREATE PROCEDURE [dbo].[pro_bs_editManualMemberLevels]
 AS
 BEGIN
     SET NOCOUNT ON;

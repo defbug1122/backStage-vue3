@@ -51,7 +51,7 @@
               :key="item.productId"
               v-model="popoversVisible[item.productId]"
             >
-              <p>確認刪除此用戶？</p>
+              <p>確認刪除此商品？</p>
               <div class="btn-group" style="text-align: right">
                 <el-button
                   size="mini"
@@ -103,7 +103,6 @@ export default {
   },
   data() {
     return {
-      safetyStock: config.safetyStock,
       currentUser: {
         permission: store.currentUser.role,
       },
@@ -125,6 +124,7 @@ export default {
       popoversVisible: {},
       tableData: [],
       hasMore: false,
+      safetyStock: 0,
       pageNumber: 1,
       pageSize: 10,
       showAddModal: false,
@@ -165,6 +165,7 @@ export default {
         if (response.data.code === 0) {
           this.tableData = response.data.data || [];
           this.hasMore = response.data.hasMore || false;
+          this.safetyStock = response.data.safetyStock;
           this.pageNumber = pageNumber;
         } else {
           this.$message({
@@ -239,10 +240,10 @@ export default {
           imagePath1: product.imagePath1,
           imagePath2: product.imagePath2,
           imagePath3: product.imagePath3,
-          price: product.price,
+          price: Number(product.price),
           type: product.type,
           describe: product.describe,
-          stock: product.stock,
+          stock: Number(product.stock),
           active: product.active,
         });
 
@@ -259,11 +260,23 @@ export default {
               type: "success",
               duration: 1200,
             });
+          } else {
+            this.showAddModal = false;
+            this.FetchProducts(
+              this.searchTerm,
+              this.pageNumber,
+              this.sortOptions[0].value
+            );
+            this.$message({
+              message: "編輯商品失敗，請重新再試一次",
+              type: "error",
+              duration: 1200,
+            });
           }
         } catch (error) {
           console.error("error", error);
           this.$message({
-            message: "編輯商品失敗",
+            message: "編輯商品失敗，請重新再試一次",
             type: "error",
             duration: 1200,
           });
@@ -275,10 +288,10 @@ export default {
           imagePath1: product.imagePath1,
           imagePath2: product.imagePath2,
           imagePath3: product.imagePath3,
-          price: product.price,
+          price: Number(product.price),
           type: product.type,
           describe: product.describe,
-          stock: product.stock,
+          stock: Number(product.stock),
           active: product.active,
         });
         try {
@@ -294,11 +307,23 @@ export default {
               type: "success",
               duration: 1200,
             });
+          } else {
+            this.showAddModal = false;
+            this.FetchProducts(
+              this.searchTerm,
+              this.pageNumber,
+              this.sortOptions[0].value
+            );
+            this.$message({
+              message: "新增商品失敗，請重新再試一次",
+              type: "error",
+              duration: 1200,
+            });
           }
         } catch (error) {
           console.error("error", error);
           this.$message({
-            message: "新增商品失敗",
+            message: "新增商品失敗，請重新再試一次",
             type: "error",
             duration: 1200,
           });

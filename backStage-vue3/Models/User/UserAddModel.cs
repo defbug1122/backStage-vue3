@@ -30,6 +30,6 @@ namespace backStage_vue3.Models
         /// <summary>
         /// 新增用戶POST-請求參數-用戶權限
         /// </summary>
-        public int? Permission { get; set; }
+        public int Permission { get; set; }
     }
 }

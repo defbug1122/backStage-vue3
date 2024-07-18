@@ -36,6 +36,7 @@ namespace backStage_vue3.Controllers
                 return Ok(result);
             }
 
+            // 密碼使用 SHA256 加密
             string hashPwd = HashHelper.ComputeSha256Hash(model.Pwd);
 
             SqlConnection connection = null;

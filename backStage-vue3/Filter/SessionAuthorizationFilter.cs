@@ -16,11 +16,22 @@ namespace backStage_vue3.Filter
         public override void OnAuthorization(HttpActionContext actionContext)
         {
             var session = HttpContext.Current.Session["userSessionInfo"] as UserSessionModel;
-            var sessionService = new UserSessionCacheService();
-            var cachedSession = sessionService.GetUserSession(session.Id);
+
             var result = new UserSessionResponseDto();
 
-            if (session == null || cachedSession == null) {
+            if (session == null) {
+                result.Code = (int)StatusResCode.MissingAuthentication;
+                actionContext.Response = actionContext.Request.CreateResponse(HttpStatusCode.Unauthorized, result);
+                return;
+            }
+
+            var sessionService = new UserSessionCacheService();
+
+            // 從緩存中獲取用戶資訊
+            var cachedSession = sessionService.GetUserSession(session.Id);
+
+            if (cachedSession == null)
+            {
                 result.Code = (int)StatusResCode.MissingAuthentication;
                 actionContext.Response = actionContext.Request.CreateResponse(HttpStatusCode.Unauthorized, result);
                 return;

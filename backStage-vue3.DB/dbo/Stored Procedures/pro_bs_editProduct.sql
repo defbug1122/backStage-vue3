@@ -3,9 +3,9 @@
 CREATE PROCEDURE [dbo].[pro_bs_editProduct]
 	@productId INT,
     @productName NVARCHAR(20),
-    @imagePath1 VARCHAR(50),
-	@imagePath2 VARCHAR(50),
-	@imagePath3 VARCHAR(50),
+    @imagePath1 VARCHAR(24),
+	@imagePath2 VARCHAR(24),
+	@imagePath3 VARCHAR(24),
     @productPrice DECIMAL(10, 2),
 	@productType TINYINT,
 	@productDescribe NVARCHAR(50),
@@ -24,9 +24,21 @@ BEGIN
 	UPDATE t_product WITH(ROWLOCK)
 	SET
 		f_name = @productName,
-		f_imagePath1 = CASE WHEN @imagePath1 = 'deleted' THEN NULL WHEN @imagePath1 != '' THEN @imagePath1 ELSE f_imagePath1 END,
-		f_imagePath2 = CASE WHEN @imagePath2 = 'deleted' THEN NULL WHEN @imagePath2 != '' THEN @imagePath2 ELSE f_imagePath2 END,
-		f_imagePath3 = CASE WHEN @imagePath3 = 'deleted' THEN NULL WHEN @imagePath3 != '' THEN @imagePath3 ELSE f_imagePath3 END,
+        f_imagePath1 = CASE 
+                         WHEN @imagePath1 IS NULL THEN NULL 
+                         WHEN @imagePath1 != '' THEN @imagePath1 
+                         ELSE f_imagePath1 
+                       END,
+        f_imagePath2 = CASE 
+                         WHEN @imagePath2 IS NULL THEN NULL 
+                         WHEN @imagePath2 != '' THEN @imagePath2 
+                         ELSE f_imagePath2 
+                       END,
+        f_imagePath3 = CASE 
+                         WHEN @imagePath3 IS NULL THEN NULL 
+                         WHEN @imagePath3 != '' THEN @imagePath3 
+                         ELSE f_imagePath3 
+                       END,
 		f_type = @productType,
 		f_price = @productPrice,
 		f_active = @productActive,

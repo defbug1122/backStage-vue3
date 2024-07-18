@@ -93,6 +93,11 @@ namespace backStage_vue3.Models
         /// <summary>
         /// 圖片上傳格式錯誤
         /// </summary>
-        ImageFormatError = 16
+        ImageFormatError = 16,
+
+        /// <summary>
+        /// 商品缺少封面圖片
+        /// </summary>
+        MissingCoverImage = 17
     }
 }

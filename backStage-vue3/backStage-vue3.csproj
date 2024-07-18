@@ -292,6 +292,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="App_Start\CleanTask.cs" />
     <Compile Include="App_Start\FilterConfig.cs" />
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="App_Start\WebApiConfig.cs" />
@@ -306,6 +307,7 @@
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
+    <Compile Include="Models\Enum\LogLevelModel.cs" />
     <Compile Include="Models\Enum\PermissionModel.cs" />
     <Compile Include="Models\Member\GetMemberResponseDto.cs" />
     <Compile Include="Models\Member\MemberModel.cs" />
@@ -314,6 +316,10 @@
     <Compile Include="Models\Member\UpdateLevelResponseDto.cs" />
     <Compile Include="Models\Member\UpdateStatusModel.cs" />
     <Compile Include="Models\Member\UpdateStatusResponseDto.cs" />
+    <Compile Include="Models\Order\GetOrderDetailResponseDto.cs" />
+    <Compile Include="Models\Order\GetOrderResponseDto.cs" />
+    <Compile Include="Models\Order\OrderDetailModel.cs" />
+    <Compile Include="Models\Order\OrderModel.cs" />
     <Compile Include="Models\Product\AddProductResponseDto.cs" />
     <Compile Include="Models\Product\DeleteProductModel.cs" />
     <Compile Include="Models\Product\DeleteProductResponseDto.cs" />
@@ -339,7 +345,9 @@
     <Compile Include="Models\User\UserSessionResponseDto.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\UserSessionCacheService.cs" />
+    <Compile Include="Utilities\ImageValidatorHelper.cs" />
     <Compile Include="Utilities\HashHelper.cs" />
+    <Compile Include="Utilities\LoggerHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="favicon.ico" />
@@ -359,6 +367,7 @@
   <ItemGroup>
     <Folder Include="ShopClient\" />
     <Folder Include="Uploads\" />
+    <Folder Include="Views\Order\" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

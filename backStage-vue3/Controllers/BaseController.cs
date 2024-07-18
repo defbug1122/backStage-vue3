@@ -5,6 +5,7 @@ using System.Web.Http;
 
 namespace backStage_vue3.Controllers
 {
+    // 身分驗證過濾器
     [SessionAuthorizationFilter]
     public class BaseController : ApiController
     {
