@@ -75,3 +75,23 @@ export const EditProduct = (params) => {
 export const DeleteProduct = (params) => {
   return https.post("api/product/delete", params);
 };
+
+// 獲取訂單列表
+export function GetOrderList(params) {
+  return https.get(`/api/orders/list`, { params });
+}
+
+// 獲取訂單详情
+export function GetOrderDetails(params) {
+  return https.get(`/api/orders/${params.orderId}`);
+}
+
+// 修改訂單配送方式
+export function UpdateDeliveryMethod(params) {
+  return https.post("/api/orders/updateDeliveryMethod", params);
+}
+
+// 刪除訂單
+export function DeleteOrder(params) {
+  return https.post("/api/orders/delete", params);
+}

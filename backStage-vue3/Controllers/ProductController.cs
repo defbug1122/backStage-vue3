@@ -15,6 +15,9 @@ namespace backStage_vue3.Controllers
 {
     public class ProductController : BaseController
     {
+        // 限制圖片最大傳輸大小
+        private int maxFileSizeInBytes = 2 * 1024 * 1024;
+
         /// <summary>
         /// HTTP GET 取得商品列表 API
         /// </summary>
@@ -25,7 +28,6 @@ namespace backStage_vue3.Controllers
         [HttpGet, Route("api/product/list")]
         public async Task<IHttpActionResult> GetProducts([FromUri] GetProdctRequest model)
         {
-
             var result = new GetProductResponseDto();
 
             if (model == null)
@@ -64,18 +66,13 @@ namespace backStage_vue3.Controllers
                 command.Parameters.AddWithValue("@pageNumber", model.PageNumber);
                 command.Parameters.AddWithValue("@pageSize", model.PageSize);
                 command.Parameters.AddWithValue("@sortBy", model.SortBy);
-
                 SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
                 {
                     Direction = ParameterDirection.Output
                 };
-
                 command.Parameters.Add(statusCodeParam);
-
                 await command.ExecuteNonQueryAsync();
-
                 int statusCode = (int)statusCodeParam.Value;
-
 
                 if (statusCode == (int)StatusResCode.UnMatchSessionId)
                 {
@@ -83,9 +80,7 @@ namespace backStage_vue3.Controllers
                 }
 
                 reader = await command.ExecuteReaderAsync();
-
                 List<ProductModel> products = new List<ProductModel>();
-
                 int totalRecords = 0;
 
                 // 從Web.config 抓取安全庫存量
@@ -111,12 +106,10 @@ namespace backStage_vue3.Controllers
                 }
 
                 bool hasMore = (model.PageNumber * model.PageSize) < totalRecords;
-
                 result.Code = (int)StatusResCode.Success;
                 result.Data = products;
                 result.HasMore = hasMore;
                 result.SafetyStock = safetyStock;
-
                 return Ok(result);
             }
             catch (Exception ex)
@@ -130,11 +123,11 @@ namespace backStage_vue3.Controllers
                     connection.Close();
                     command.Parameters.Clear();
                 }
+
                 if (reader != null)
                 {
                     reader.Close();
                 }
-
             }
         }
 
@@ -160,16 +153,8 @@ namespace backStage_vue3.Controllers
                 return Ok(result);
             }
 
-            // 名稱不可超過20個字、描述不可超過50個字、價格不能為負值、庫存量不能為負值、種類不能為負值且不能超過3
-            if (model.Name.Length > 20 || model.Describe.Length > 50 || model.Price < 0 || model.Stock < 0 || (model.Type > 3 || model.Type < 0))
-            {
-                result.Code = (int)StatusResCode.InvalidFormat;
-                return Ok(result);
-            }
-
-            // 名稱不能輸入含空格
-            if (
-                System.Text.RegularExpressions.Regex.IsMatch(model.Name, @"\s"))
+            // 商品名稱不可為空、描述不可超過50個字、價格不能為負值、庫存量不能為負值、種類不能為負值且不能超過3
+            if ((model.Name.Length == 0 || model.Name.Length > 20) || model.Describe.Length > 50 || model.Price < 0 || model.Stock < 0 || (model.Type > 3 || model.Type < 0))
             {
                 result.Code = (int)StatusResCode.InvalidFormat;
                 return Ok(result);
@@ -186,7 +171,7 @@ namespace backStage_vue3.Controllers
 
             try
             {
-                imagePaths = ProcessBase64Images(new string[] { model.ImagePath1, model.ImagePath2, model.ImagePath3 }, 2);
+                imagePaths = ProcessBase64Images(new string[] { model.ImagePath1, model.ImagePath2, model.ImagePath3 }, maxFileSizeInBytes);
             }
             catch (ArgumentException ex)
             {
@@ -206,7 +191,12 @@ namespace backStage_vue3.Controllers
                 {
                     result.Code = (int)StatusResCode.Failed;
                 }
+
                 return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return InternalServerError(ex);
             }
 
             SqlConnection connection = null;
@@ -220,24 +210,21 @@ namespace backStage_vue3.Controllers
                 {
                     CommandType = CommandType.StoredProcedure
                 };
-                command.Parameters.AddWithValue("@productName", model.Name);
+                command.Parameters.AddWithValue("@productName", model.Name.Trim());
                 command.Parameters.AddWithValue("@imagePath1", (object)imagePaths[0] ?? DBNull.Value);
                 command.Parameters.AddWithValue("@imagePath2", (object)imagePaths[1] ?? DBNull.Value);
                 command.Parameters.AddWithValue("@imagePath3", (object)imagePaths[2] ?? DBNull.Value);
                 command.Parameters.AddWithValue("@productPrice", model.Price);
                 command.Parameters.AddWithValue("@productType", model.Type);
-                command.Parameters.AddWithValue("@productDescribe", model.Describe);
+                command.Parameters.AddWithValue("@productDescribe", model.Describe.Trim());
                 command.Parameters.AddWithValue("@productStock", model.Stock);
                 command.Parameters.AddWithValue("@productActive", model.Active);
-
                 SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
                 {
                     Direction = ParameterDirection.Output
                 };
                 command.Parameters.Add(statusCodeParam);
-
                 await command.ExecuteNonQueryAsync();
-
                 int statusCode = (int)statusCodeParam.Value;
 
                 if (statusCode == (int)StatusResCode.Success)
@@ -256,7 +243,6 @@ namespace backStage_vue3.Controllers
                     result.Code = (int)StatusResCode.Failed;
                     return Ok(result);
                 }
-
             }
             catch (Exception ex)
             {
@@ -272,7 +258,6 @@ namespace backStage_vue3.Controllers
                     command.Parameters.Clear();
                 }
             }
-
         }
 
         /// <summary>
@@ -297,8 +282,8 @@ namespace backStage_vue3.Controllers
                 return Ok(result);
             }
 
-            // 名稱不可超過20個字、描述不可超過50個字、價格不能為負值、庫存量不能為負值、種類不能為負值且不能超過3
-            if (model.Name.Length > 20 || model.Describe.Length > 50 || model.Price <= 0 || model.Stock < 0 || (model.Type > 3 || model.Type < 0))
+            // 商品名稱不可為空，超過20個字、描述不可超過50個字、價格不能為負值、庫存量不能為負值、種類不能為負值且不能超過3
+            if ((model.Name.Length == 0 || model.Name.Length > 20) || model.Describe.Length > 50 || model.Price <= 0 || model.Stock < 0 || (model.Type > 3 || model.Type < 0))
             {
                 result.Code = (int)StatusResCode.InvalidFormat;
                 return Ok(result);
@@ -311,19 +296,11 @@ namespace backStage_vue3.Controllers
                 return Ok(result);
             }
 
-            // 名稱不能輸入含空格
-            if (
-                System.Text.RegularExpressions.Regex.IsMatch(model.Name, @"\s"))
-            {
-                result.Code = (int)StatusResCode.InvalidFormat;
-                return Ok(result);
-            }
-
             string[] imagePaths;
 
             try
             {
-                imagePaths = ProcessBase64Images(new string[] { model.ImagePath1, model.ImagePath2, model.ImagePath3 }, 2);
+                imagePaths = ProcessBase64Images(new string[] { model.ImagePath1, model.ImagePath2, model.ImagePath3 }, maxFileSizeInBytes);
             }
             catch (ArgumentException ex)
             {
@@ -358,24 +335,21 @@ namespace backStage_vue3.Controllers
                     CommandType = CommandType.StoredProcedure
                 };
                 command.Parameters.AddWithValue("@productId", model.ProductId);
-                command.Parameters.AddWithValue("@productName", model.Name);
+                command.Parameters.AddWithValue("@productName", model.Name.Trim());
                 command.Parameters.AddWithValue("@imagePath1", (object)imagePaths[0] ?? DBNull.Value);
                 command.Parameters.AddWithValue("@imagePath2", (object)imagePaths[1] ?? DBNull.Value);
                 command.Parameters.AddWithValue("@imagePath3", (object)imagePaths[2] ?? DBNull.Value);
                 command.Parameters.AddWithValue("@productPrice", model.Price);
                 command.Parameters.AddWithValue("@productType", model.Type);
-                command.Parameters.AddWithValue("@productDescribe", model.Describe);
+                command.Parameters.AddWithValue("@productDescribe", model.Describe.Trim());
                 command.Parameters.AddWithValue("@productStock", model.Stock);
                 command.Parameters.AddWithValue("@productActive", model.Active);
-
                 SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
                 {
                     Direction = ParameterDirection.Output
                 };
                 command.Parameters.Add(statusCodeParam);
-
                 await command.ExecuteNonQueryAsync();
-
                 int statusCode = (int)statusCodeParam.Value;
 
                 if (statusCode == (int)StatusResCode.Success)
@@ -394,7 +368,6 @@ namespace backStage_vue3.Controllers
                     result.Code = (int)StatusResCode.Failed;
                     return Ok(result);
                 }
-
             }
             catch (Exception ex)
             {
@@ -410,7 +383,6 @@ namespace backStage_vue3.Controllers
                     command.Parameters.Clear();
                 }
             }
-
         }
 
         /// <summary>
@@ -483,7 +455,7 @@ namespace backStage_vue3.Controllers
                 int statusCode = (int)statusCodeParam.Value;
 
                 if (statusCode == (int)StatusResCode.Success)
-                {  
+                {
                     string[] imagePaths = {
                         imagePath1Param.Value.ToString(),
                         imagePath2Param.Value.ToString(),
@@ -492,7 +464,6 @@ namespace backStage_vue3.Controllers
 
                     // 刪除圖片文件
                     DeleteFiles(imagePaths);
-
                     result.Code = (int)StatusResCode.Success;
                     return Ok(result);
                 }
@@ -505,7 +476,6 @@ namespace backStage_vue3.Controllers
                     result.Code = (int)StatusResCode.Failed;
                     return Ok(result);
                 }
-
             }
             catch (Exception ex)
             {
@@ -519,26 +489,22 @@ namespace backStage_vue3.Controllers
                     command.Parameters.Clear();
                 }
             }
-
         }
 
         /// <summary>
-        /// 處理Base64圖片
+        /// 處理商品Base64圖片
         /// </summary>
         /// <param name="base64Images"></param>
         /// <returns></returns>
-        private string[] ProcessBase64Images(string[] base64Images, int maxFileSizeInMB)
+        private string[] ProcessBase64Images(string[] base64Images, int maxFileSizeInBytes)
         {
             string[] imagePaths = new string[base64Images.Length];
-
-            // 定義限制圖片大小傳輸
-            int maxFileSizeInBytes = maxFileSizeInMB * 1024 * 1024;
 
             for (int i = 0; i < base64Images.Length; i++)
             {
                 var base64Image = base64Images[i];
 
-                // 要刪除的圖片會標記為"deleted"
+                // 空字串代表不更新資料庫圖片
                 if (base64Image == "")
                 {
                     imagePaths[i] = "";
@@ -593,6 +559,7 @@ namespace backStage_vue3.Controllers
                 if (!string.IsNullOrEmpty(path))
                 {
                     var filePath = Path.Combine(HttpContext.Current.Server.MapPath("~/Uploads"), path);
+
                     if (File.Exists(filePath))
                     {
                         File.Delete(filePath);

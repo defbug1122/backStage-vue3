@@ -9,11 +9,13 @@ using System.Threading.Tasks;
 using backStage_vue3.Utilities;
 using System.Web;
 using backStage_vue3.Services;
+using System.Linq;
 
 namespace backStage_vue3.Controllers
 {
     public class UserController : BaseController
     {
+        // 用戶資訊緩存
         private readonly UserSessionCacheService _sessionService = new UserSessionCacheService();
         string pattern = @"^[a-zA-Z0-9_-]{4,16}$";
 
@@ -28,7 +30,6 @@ namespace backStage_vue3.Controllers
         public async Task<IHttpActionResult> GetUsers([FromUri] GetUserRequest model)
         {
             var result = new GetUserResponseDto();
-
             bool checkPermission = (UserSession.Permission & (int)Permissions.ViewAccount) == (int)Permissions.ViewAccount;
 
             if (!checkPermission)
@@ -65,15 +66,12 @@ namespace backStage_vue3.Controllers
                 command.Parameters.AddWithValue("@pageNumber", model.PageNumber);
                 command.Parameters.AddWithValue("@pageSize", model.PageSize);
                 command.Parameters.AddWithValue("@sortBy", model.SortBy);
-
                 SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
                 {
                     Direction = ParameterDirection.Output
                 };
                 command.Parameters.Add(statusCodeParam);
-
                 await command.ExecuteNonQueryAsync();
-
                 int statusCode = (int)statusCodeParam.Value;
 
                 if (statusCode == (int)StatusResCode.UnMatchSessionId)
@@ -82,9 +80,7 @@ namespace backStage_vue3.Controllers
                 }
 
                 reader = await command.ExecuteReaderAsync();
-
                 List<UserModel> users = new List<UserModel>();
-
                 int totalRecords = 0;
 
                 while (await reader.ReadAsync())
@@ -101,11 +97,9 @@ namespace backStage_vue3.Controllers
                 }
 
                 bool hasMore = (model.PageNumber * model.PageSize) < totalRecords;
-
                 result.Code = (int)StatusResCode.Success;
                 result.Data = users;
                 result.HasMore = hasMore;
-
                 return Ok(result);
             }
             catch (Exception ex)
@@ -119,12 +113,12 @@ namespace backStage_vue3.Controllers
                     connection.Close();
                     command.Parameters.Clear();
                 }
+
                 if (reader != null)
                 {
                     reader.Close();
                 }
             }
-
         }
 
         /// <summary>
@@ -225,15 +219,12 @@ namespace backStage_vue3.Controllers
                 command.Parameters.AddWithValue("@pwd", HashHelper.ComputeSha256Hash(model.Pwd));
                 command.Parameters.AddWithValue("@createTime", DateTime.Now);
                 command.Parameters.AddWithValue("@permission", model.Permission);
-
                 SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
                 {
                     Direction = ParameterDirection.Output
                 };
                 command.Parameters.Add(statusCodeParam);
-
                 await command.ExecuteNonQueryAsync();
-
                 int statusCode = (int)statusCodeParam.Value;
 
                 if (statusCode == (int)StatusResCode.Success)
@@ -250,7 +241,6 @@ namespace backStage_vue3.Controllers
                     result.Code = (int)StatusResCode.Failed;
                     return Ok(result);
                 }
-
             }
             catch (Exception ex)
             {
@@ -264,7 +254,6 @@ namespace backStage_vue3.Controllers
                     command.Parameters.Clear();
                 }
             }
-
         }
 
         /// <summary>
@@ -308,15 +297,12 @@ namespace backStage_vue3.Controllers
                     CommandType = CommandType.StoredProcedure
                 };
                 command.Parameters.AddWithValue("@userId", model.Id);
-
                 SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
                 {
                     Direction = ParameterDirection.Output
                 };
                 command.Parameters.Add(statusCodeParam);
-
                 await command.ExecuteNonQueryAsync();
-
                 int statusCode = (int)statusCodeParam.Value;
 
                 if (statusCode == (int)StatusResCode.Success)
@@ -347,7 +333,6 @@ namespace backStage_vue3.Controllers
                     command.Parameters.Clear();
                 }
             }
-
         }
 
         /// <summary>
@@ -377,6 +362,7 @@ namespace backStage_vue3.Controllers
             // 判斷權限值是否有效
             if (Enum.TryParse(inputString, out Permissions permission))
             {
+
                 if (!IsValidPermissions(permission))
                 {
                     result.Code = (int)StatusResCode.SetPermissionFailed;
@@ -433,15 +419,12 @@ namespace backStage_vue3.Controllers
                 command.Parameters.AddWithValue("@userId", model.Id);
                 command.Parameters.AddWithValue("@newPermission", model.Permission);
                 command.Parameters.AddWithValue("@updateTime", DateTime.Now);
-
                 SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
                 {
                     Direction = ParameterDirection.Output
                 };
                 command.Parameters.Add(statusCodeParam);
-
                 await command.ExecuteNonQueryAsync();
-
                 int statusCode = (int)statusCodeParam.Value;
 
                 if (statusCode == (int)StatusResCode.Success)
@@ -467,7 +450,6 @@ namespace backStage_vue3.Controllers
                     result.Code = (int)StatusResCode.Failed;
                     return Ok(result);
                 }
-
             }
             catch (Exception ex)
             {
@@ -480,7 +462,6 @@ namespace backStage_vue3.Controllers
                     connection.Close();
                 }
             }
-
         }
 
         /// <summary>
@@ -527,15 +508,12 @@ namespace backStage_vue3.Controllers
                 command.Parameters.AddWithValue("@userId", model.Id);
                 command.Parameters.AddWithValue("@newPwd", HashHelper.ComputeSha256Hash(model.Pwd));
                 command.Parameters.AddWithValue("@updateTime", DateTime.Now);
-
                 SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
                 {
                     Direction = ParameterDirection.Output
                 };
                 command.Parameters.Add(statusCodeParam);
-
                 await command.ExecuteNonQueryAsync();
-
                 int statusCode = (int)statusCodeParam.Value;
 
                 if (statusCode == (int)StatusResCode.Success)
@@ -552,7 +530,6 @@ namespace backStage_vue3.Controllers
                     result.Code = (int)StatusResCode.Failed;
                     return Ok(result);
                 }
-
             }
             catch (Exception ex)
             {
@@ -565,7 +542,6 @@ namespace backStage_vue3.Controllers
                     connection.Close();
                 }
             }
-
         }
 
         /// <summary>
@@ -577,7 +553,6 @@ namespace backStage_vue3.Controllers
         public async Task<IHttpActionResult> Logout()
         {
             var result = new UserLogoutResponseDto();
-
             SqlConnection connection = null;
             SqlCommand command = null;
 
@@ -585,7 +560,6 @@ namespace backStage_vue3.Controllers
             {
                 connection = new SqlConnection(SqlConfig.conStr);
                 await connection.OpenAsync();
-
                 command = new SqlCommand("pro_bs_getUserLogout", connection)
                 {
                     CommandType = CommandType.StoredProcedure
@@ -596,7 +570,6 @@ namespace backStage_vue3.Controllers
                     Direction = ParameterDirection.Output
                 };
                 command.Parameters.Add(statusCodeParam);
-
                 await command.ExecuteNonQueryAsync();
                 int statusCode = (int)statusCodeParam.Value;
 
@@ -653,7 +626,6 @@ namespace backStage_vue3.Controllers
             }
             finally
             {
-
                 if (connection != null && connection.State == ConnectionState.Open)
                 {
                     connection.Close();
@@ -669,30 +641,14 @@ namespace backStage_vue3.Controllers
         /// <returns></returns>
         private static bool IsValidPermissions(Permissions permission)
         {
-            // 獲取所有 Enum 定義權限的值
+            // 獲取 Enum 定義權限值
             var allValues = Enum.GetValues(typeof(Permissions));
 
-            // 初始化一個變量來存儲所有有效的權限值
-            int validPermissions = 0;
+            // 使用LINQ 計算目前有效的權限值總和
+            int totalValue = allValues.Cast<int>().Aggregate((total, next) => total | next);
 
-            // 將定義好的每個權限值拿來使用
-            foreach (var value in allValues)
-            {
-                // 當前的權限值
-                Permissions currentPermission = (Permissions)value;
-
-                // 累加所有有效的權限值
-                validPermissions |= (int)currentPermission;  
-
-                // 如果输入的權限包含當前權限值
-                if ((permission & currentPermission) != 0 && (permission & currentPermission) != currentPermission)
-                {
-                    return false;
-                }
-            }
-
-            // 確保輸入的權限值沒有包含任何未定義的權限值
-            if (((int)permission & ~validPermissions) != 0)
+            // 確保輸入的權限值不能超過有效的權限值總和
+            if ((int)permission > totalValue)
             {
                 return false;
             }

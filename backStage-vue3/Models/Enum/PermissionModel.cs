@@ -1,6 +1,8 @@
-﻿
-namespace backStage_vue3.Models
+﻿namespace backStage_vue3.Models
 {
+    /// <summary>
+    /// 權限定義
+    /// </summary>
     public enum Permissions
     {
 

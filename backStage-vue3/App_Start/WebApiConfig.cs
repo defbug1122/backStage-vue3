@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json.Serialization;
+﻿using backStage_vue3.Filter;
+using Newtonsoft.Json.Serialization;
 using System.Web.Http;
 
 namespace backStage_vue3
@@ -22,6 +23,9 @@ namespace backStage_vue3
                 routeTemplate: "api/{controller}/{id}",
                 defaults: new { id = RouteParameter.Optional }
             );
+
+            // 全局錯誤處理
+            config.Filters.Add(new GlobalExceptionFilter());
         }
     }
 }

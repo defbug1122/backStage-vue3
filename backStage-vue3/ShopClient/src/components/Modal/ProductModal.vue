@@ -1,13 +1,11 @@
 <template>
   <el-dialog
     :title="isEditMode ? '編輯商品' : '新增商品'"
-    :visible.sync="showModal"
+    :visible.sync="$props.showModal"
     width="70%"
     top="1vh"
-    @close="CloseModal"
-    @closed="CloseModal"
     :close-on-click-modal="false"
-    :show-close="false"
+    :before-close="CloseModal"
     class="product-modal"
   >
     <div>
@@ -108,9 +106,10 @@
           </el-form-item>
         </div>
         <span style="color: #ca432f"
-          >**圖片建議上傳尺寸為「寬度1200px、高度100-2200px」，且每張圖片的比例必須和封面圖片相同
-          **</span
-        >
+          >** 圖片建議上傳尺寸使用 600 X 600 像素(長寬比 1:1)，
+        </span>
+        <span style="color: #ca432f">上傳格式限制為 .jpg、.jpeg、.png ，</span>
+        <span style="color: #ca432f">上傳大小限制為 2MB 以內 **</span>
         <div class="product-setting-block">
           <el-form-item label="商品類型">
             <el-select v-model="product.type">
@@ -163,10 +162,10 @@ export default {
         imagePath2: "",
         imagePath3: "",
         type: null,
-        price: 10,
+        price: 0,
         active: false,
         describe: "",
-        stock: 10,
+        stock: 0,
       }),
     },
   },
@@ -232,11 +231,6 @@ export default {
         return;
       }
 
-      if (/\s/.test(this.product.name)) {
-        this.$message.error("商品名稱不能輸入含空格。");
-        return;
-      }
-
       if (this.product.name.length > 20) {
         this.$message.error("商品名稱不能大於20個字。");
         return;
@@ -247,6 +241,11 @@ export default {
         return;
       }
 
+      if (this.product.price === "") {
+        this.$message.error("商品價格不能輸入為空。");
+        return;
+      }
+
       if (this.product.price <= 0) {
         this.$message.error("商品價格應大於0。");
         return;
@@ -254,6 +253,11 @@ export default {
 
       if (this.product.describe.length > 50) {
         this.$message.error("商品描述不能大於50個字。");
+        return;
+      }
+
+      if (this.product.stock === "") {
+        this.$message.error("商品庫存不能輸入為空。");
         return;
       }
 
@@ -377,7 +381,9 @@ export default {
 .uploaded-image {
   width: 100px;
   height: 100px;
-  object-fit: cover;
+  object-fit: contain;
+  object-position: center;
+  background: #000;
 }
 
 .upload-item input[type="file"] {

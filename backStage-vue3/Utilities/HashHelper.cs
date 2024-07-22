@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
 
 namespace backStage_vue3.Utilities
@@ -21,7 +17,6 @@ namespace backStage_vue3.Utilities
         {
             SHA256 sha256Hash = SHA256.Create();
             byte[] bytes = sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(data));
-
             StringBuilder builder = new StringBuilder();
 
             for (int i = 0; i < bytes.Length; i++)

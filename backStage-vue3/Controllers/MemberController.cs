@@ -5,7 +5,6 @@ using System.Data.SqlClient;
 using System.Data;
 using System.Net;
 using System.Threading.Tasks;
-using System.Web;
 using System.Collections.Generic;
 
 namespace backStage_vue3.Controllers
@@ -22,7 +21,6 @@ namespace backStage_vue3.Controllers
         [HttpGet, Route("api/member/list")]
         public async Task<IHttpActionResult> GetMembers([FromUri] GetMemberRequest model)
         {
-
             var result = new GetMemberResponseDto();
 
             if (model == null)
@@ -61,18 +59,13 @@ namespace backStage_vue3.Controllers
                 command.Parameters.AddWithValue("@pageNumber", model.PageNumber);
                 command.Parameters.AddWithValue("@pageSize", model.PageSize);
                 command.Parameters.AddWithValue("@sortBy", model.SortBy);
-
                 SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
                 {
                     Direction = ParameterDirection.Output
                 };
-
                 command.Parameters.Add(statusCodeParam);
-
                 await command.ExecuteNonQueryAsync();
-
                 int statusCode = (int)statusCodeParam.Value;
-
 
                 if (statusCode == (int)StatusResCode.UnMatchSessionId)
                 {
@@ -80,9 +73,7 @@ namespace backStage_vue3.Controllers
                 }
 
                 reader = await command.ExecuteReaderAsync();
-
                 List<MemberModel> members = new List<MemberModel>();
-
                 int totalRecords = 0;
 
                 while (await reader.ReadAsync())
@@ -100,11 +91,9 @@ namespace backStage_vue3.Controllers
                 }
 
                 bool hasMore = (model.PageNumber * model.PageSize) < totalRecords;
-
                 result.Code = (int)StatusResCode.Success;
                 result.Data = members;
                 result.HasMore = hasMore;
-
                 return Ok(result);
             }
             catch(Exception ex)
@@ -118,11 +107,11 @@ namespace backStage_vue3.Controllers
                     connection.Close();
                     command.Parameters.Clear();
                 }
+
                 if (reader != null)
                 {
                     reader.Close();
                 }
-
             }
         }
 
@@ -162,15 +151,12 @@ namespace backStage_vue3.Controllers
                 };
                 command.Parameters.AddWithValue("@memberId",model.MemberId);
                 command.Parameters.AddWithValue("@status", model.Status);
-
                 SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
                 {
                     Direction = ParameterDirection.Output
                 };
                 command.Parameters.Add(statusCodeParam);
-
                 await command.ExecuteNonQueryAsync();
-
                 int statusCode = (int)statusCodeParam.Value;
 
                 if (statusCode == (int)StatusResCode.Success)
@@ -245,15 +231,12 @@ namespace backStage_vue3.Controllers
                 };
                 command.Parameters.AddWithValue("@memberId", model.MemberId);
                 command.Parameters.AddWithValue("@level", model.Level);
-
                 SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
                 {
                     Direction = ParameterDirection.Output
                 };
                 command.Parameters.Add(statusCodeParam);
-
                 await command.ExecuteNonQueryAsync();
-
                 int statusCode = (int)statusCodeParam.Value;
 
                 if (statusCode == (int)StatusResCode.Success)
@@ -270,7 +253,6 @@ namespace backStage_vue3.Controllers
                     result.Code = (int)StatusResCode.Failed;
                     return Ok(result);
                 }
-
             }
             catch (Exception ex)
             {
@@ -284,6 +266,5 @@ namespace backStage_vue3.Controllers
                 }
             }
         }
-
     }
 }

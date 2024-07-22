@@ -1,5 +1,4 @@
-﻿
-namespace backStage_vue3.Models
+﻿namespace backStage_vue3.Models
 {
     /// <summary>
     /// 刪除用戶POST回應

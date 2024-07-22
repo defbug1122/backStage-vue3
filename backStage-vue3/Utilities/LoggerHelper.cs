@@ -31,7 +31,6 @@ namespace backStage_vue3.Utilities
         {
             string logFilePath = Path.Combine(LogDirectory, $"{DateTime.Now:yyyy-MM-dd}.txt");
             string logMessage = $"{DateTime.Now}: [{level}] {message}{Environment.NewLine}";
-
             lock (LockObject)
             {
                 File.AppendAllText(logFilePath, logMessage);
@@ -47,8 +46,9 @@ namespace backStage_vue3.Utilities
 
             foreach (var logFile in logFiles)
             {
-                var creationTime = File.GetCreationTime(logFile);
-                if (DateTime.Now - creationTime > LogRetentionPeriod)
+                var lastWriteTime = File.GetLastWriteTime(logFile);
+
+                if (DateTime.Now - lastWriteTime > LogRetentionPeriod)
                 {
                     try
                     {

@@ -1,5 +1,4 @@
-﻿
-namespace backStage_vue3.Models
+﻿namespace backStage_vue3.Models
 {
     /// <summary>
     /// 更新用戶密碼 POST 回應

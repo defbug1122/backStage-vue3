@@ -1,11 +1,10 @@
 <template>
   <el-dialog
     title="編輯密碼"
-    :visible.sync="showModal"
+    :visible.sync="$props.showModal"
     width="50%"
     top="6vh"
-    @close="CloseModal"
-    @closed="CloseModal"
+    :before-close="CloseModal"
     :close-on-click-modal="false"
     :show-close="false"
   >

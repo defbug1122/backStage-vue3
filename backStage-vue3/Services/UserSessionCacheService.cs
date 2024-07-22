@@ -1,5 +1,6 @@
 ﻿using backStage_vue3.Models;
 using System;
+using System.Configuration;
 using System.Runtime.Caching;
 
 namespace backStage_vue3.Services
@@ -27,7 +28,7 @@ namespace backStage_vue3.Services
         {
             var cacheItemPolicy = new CacheItemPolicy
             {
-                SlidingExpiration = TimeSpan.FromMinutes(20) // 設置緩存時間，20分鐘沒有活動會過期
+                SlidingExpiration = TimeSpan.FromMinutes(int.Parse(ConfigurationManager.AppSettings["Timeout"])) // 設置緩存時間，20分鐘沒有活動會過期
             };
 
             // 進入lock 區塊，會去檢查此 key 是否被佔用，如果被佔用，就要排隊等待
@@ -70,6 +71,7 @@ namespace backStage_vue3.Services
             {
                 // 首先先確認該用戶是否在緩存中
                 var session = UserSessionCache.Get(userId.ToString()) as UserSessionModel;
+
                 if (session != null)
                 {
                     // 創建一個新的 UserSessionModel 實例來更新該用戶會話緩存
@@ -83,7 +85,7 @@ namespace backStage_vue3.Services
 
                     UserSessionCache.Set(updatedSession.Id.ToString(), updatedSession, new CacheItemPolicy
                     {
-                        SlidingExpiration = TimeSpan.FromMinutes(20) // 設置緩存時間，20分鐘沒有活動會過期
+                        SlidingExpiration = TimeSpan.FromMinutes(int.Parse(ConfigurationManager.AppSettings["Timeout"])) // 設置緩存時間，20分鐘沒有活動會過期
                     });
                 }
             }

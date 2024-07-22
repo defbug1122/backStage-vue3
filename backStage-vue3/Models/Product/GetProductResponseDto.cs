@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
+﻿using System.Collections.Generic;
 
 namespace backStage_vue3.Models
 {
@@ -12,6 +9,9 @@ namespace backStage_vue3.Models
         /// </summary>
         public int Code { get; set; }
 
+        /// <summary>
+        /// 回傳商品列表資訊
+        /// </summary>
         public List<ProductModel> Data { get; set; }
 
         /// <summary>

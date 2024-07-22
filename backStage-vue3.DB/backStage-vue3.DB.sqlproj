@@ -93,5 +93,11 @@
     <Build Include="dbo\Stored Procedures\pro_bs_delProduct.sql" />
     <Build Include="dbo\Stored Procedures\pro_bs_getProductImagePaths.sql" />
     <Build Include="dbo\Stored Procedures\pro_bs_editManualMemberLevels.sql" />
+    <Build Include="dbo\Stored Procedures\pro_bs_getOrderDetails.sql" />
+    <Build Include="dbo\Stored Procedures\pro_bs_getAllOrders.sql">
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\pro_bs_editDeliveryMethod.sql" />
+    <Build Include="dbo\Stored Procedures\pro_bs_delOrder.sql" />
   </ItemGroup>
 </Project>

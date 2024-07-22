@@ -15,7 +15,6 @@ namespace backStage_vue3
         public static void RegisterRoutes(RouteCollection routes)
         {
             routes.IgnoreRoute("{resource}.axd/{*pathInfo}");
-            
             // 預設路由
             routes.MapRoute(
                 name: "Default",

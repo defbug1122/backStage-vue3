@@ -1,11 +1,8 @@
 ﻿using backStage_vue3.App_Start;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Configuration;
 using System.Web;
 using System.Web.Http;
 using System.Web.Mvc;
-using System.Web.Optimization;
 using System.Web.Routing;
 
 namespace backStage_vue3
@@ -41,7 +38,7 @@ namespace backStage_vue3
         protected void Session_start()
         {
             Session["user"] = User.Identity.Name;
-            Session["count"] = 0;
+            Session.Timeout = int.Parse(ConfigurationManager.AppSettings["Timeout"]); ;
         }
     }
 }

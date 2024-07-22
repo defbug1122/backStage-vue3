@@ -24,6 +24,7 @@
               :src="GetImageUrl(item.imagePath1)"
               alt="product image"
               width="100"
+              class="product-img"
             />
           </td>
           <td>{{ GetTypeName(item.type) }}</td>
@@ -93,7 +94,6 @@ import SearchList from "@/components/SearchList.vue";
 import UserInfo from "@/components/UserInfo.vue";
 import ProductModal from "@/components/Modal/ProductModal.vue";
 import { store } from "@/store";
-import { config } from "@/config";
 
 export default {
   components: {
@@ -236,13 +236,13 @@ export default {
       if (this.isEditMode) {
         const response = await EditProduct({
           productId: product.productId,
-          name: product.name,
+          name: product.name.trim(),
           imagePath1: product.imagePath1,
           imagePath2: product.imagePath2,
           imagePath3: product.imagePath3,
           price: Number(product.price),
           type: product.type,
-          describe: product.describe,
+          describe: product.describe.trim(),
           stock: Number(product.stock),
           active: product.active,
         });
@@ -284,13 +284,13 @@ export default {
       } else {
         // 新增商品
         const response = await CreateProduct({
-          name: product.name,
+          name: product.name.trim(),
           imagePath1: product.imagePath1,
           imagePath2: product.imagePath2,
           imagePath3: product.imagePath3,
           price: Number(product.price),
           type: product.type,
-          describe: product.describe,
+          describe: product.describe.trim(),
           stock: Number(product.stock),
           active: product.active,
         });
@@ -413,5 +413,13 @@ export default {
 
 .stock {
   position: relative;
+}
+
+.product-img {
+  object-fit: contain;
+  object-position: center;
+  background: #000;
+  width: 100px;
+  height: 100px;
 }
 </style>

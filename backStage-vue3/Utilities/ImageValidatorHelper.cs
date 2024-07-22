@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
 
 namespace backStage_vue3.Utilities
 {
@@ -28,7 +25,7 @@ namespace backStage_vue3.Utilities
             var fileType = header.Split(';')[0].Split('/')[1];
 
             // 驗證是否為Base 64碼
-            if(!IsBase64String(data))
+            if (!IsBase64String(data))
             {
                 throw new ArgumentException("InvalidBase64FormatError");
             }
@@ -71,7 +68,5 @@ namespace backStage_vue3.Utilities
                 return false;
             }
         }
-
     }
-
 }

@@ -1,13 +1,11 @@
 <template>
   <el-dialog
     title="新增用戶"
-    :visible.sync="showModal"
+    :visible.sync="$props.showModal"
     width="50%"
     top="8vh"
-    @close="CloseModal"
-    @closed="CloseModal"
+    :before-close="CloseModal"
     :close-on-click-modal="false"
-    :show-close="false"
     class="add-user-model"
   >
     <div>

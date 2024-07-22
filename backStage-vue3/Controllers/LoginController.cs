@@ -21,7 +21,6 @@ namespace backStage_vue3.Controllers
         public async Task<IHttpActionResult> Login(UserLoginModel model)
         {
             var result = new UserLoginResponseDto();
-
             string pattern = @"^[a-zA-Z0-9_-]{4,16}$";
 
             if (model.Pwd == null || model.UserName == null) {
@@ -38,7 +37,6 @@ namespace backStage_vue3.Controllers
 
             // 密碼使用 SHA256 加密
             string hashPwd = HashHelper.ComputeSha256Hash(model.Pwd);
-
             SqlConnection connection = null;
             SqlCommand command = null;
             SqlDataReader reader = null;
@@ -47,7 +45,6 @@ namespace backStage_vue3.Controllers
             {
                 connection = new SqlConnection(SqlConfig.conStr);
                 await connection.OpenAsync();
-
                 command = new SqlCommand("pro_bs_getUserLogin", connection)
                 {
                     CommandType = CommandType.StoredProcedure
@@ -60,9 +57,7 @@ namespace backStage_vue3.Controllers
                     Direction = ParameterDirection.Output
                 };
                 command.Parameters.Add(statusCodeParam);
-
                 await command.ExecuteNonQueryAsync();
-
                 int statusCode = (int)statusCodeParam.Value;
                 string Id = HttpContext.Current.Session.SessionID;
 
@@ -85,20 +80,17 @@ namespace backStage_vue3.Controllers
                         };
 
                         HttpContext.Current.Session["userSessionInfo"] = sessionInfo;
-
                         HttpCookie uuidCookie = new HttpCookie("uuid", HttpContext.Current.Session.SessionID);
                         HttpCookie permissionCookie = new HttpCookie("permission", permission);
                         HttpCookie currentUserCookie = new HttpCookie("currentUser", model.UserName);
                         HttpCookie userIdCookie = new HttpCookie("userId", userId);
-
                         HttpContext.Current.Response.Cookies.Add(uuidCookie);
                         HttpContext.Current.Response.Cookies.Add(permissionCookie);
                         HttpContext.Current.Response.Cookies.Add(currentUserCookie);
                         HttpContext.Current.Response.Cookies.Add(userIdCookie);
-
                         var sessionService = new UserSessionCacheService();
                         sessionService.AddUserSession(sessionInfo);
-
+                        LoggerHelper.Log(LogLevel.Info, $"session-----${HttpContext.Current.Session.Timeout}");
                         result.Code = (int)StatusResCode.Success;
                         return Ok(result);
                     }
@@ -110,7 +102,6 @@ namespace backStage_vue3.Controllers
                 }
                 else
                 {
-
                     result.Code = (int)StatusResCode.Failed;
                     return Ok(result);
                 }
@@ -126,6 +117,7 @@ namespace backStage_vue3.Controllers
                     connection.Close();
                     command.Parameters.Clear();
                 }
+
                 if (reader != null)
                 {
                     reader.Close();

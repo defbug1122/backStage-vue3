@@ -6,6 +6,8 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using backStage_vue3.Utilities;
+using System.Web;
+using System.Web.SessionState;
 
 namespace backStage_vue3.App_Start
 {
@@ -25,11 +27,11 @@ namespace backStage_vue3.App_Start
         /// </summary>
         public void Start()
         {
-            //Logger.CleanupOldLogs(); // 清理過期日誌
+            LoggerHelper.CleanupOldLogs(); // 清理過期日誌
 
             // 每周清理一次作業
             _timer = new Timer(ExecuteTask, null, TimeSpan.Zero, TimeSpan.FromDays(7));
-            LoggerHelper.Log(LogLevel.Info,"啟動清理任務。");
+            LoggerHelper.Log(LogLevel.Info, "啟動清理任務。");
         }
 
         /// <summary>
@@ -38,7 +40,7 @@ namespace backStage_vue3.App_Start
         public void Stop()
         {
             _timer?.Change(Timeout.Infinite, 0); // 停止計時器
-            LoggerHelper.Log(LogLevel.Info,"停止清理任務。");
+            LoggerHelper.Log(LogLevel.Info, "停止清理任務。");
         }
 
         /// <summary>
@@ -54,13 +56,13 @@ namespace backStage_vue3.App_Start
                 try
                 {
                     LoggerHelper.Log(LogLevel.Info, $"清理任務執行第 {attempt + 1} 次開始。");
-
                     var files = Directory.GetFiles(_uploadPath);
                     var validFiles = GetValidFilesFromDatabase(_connectionString);
 
                     foreach (var file in files)
                     {
                         string fileName = Path.GetFileName(file);
+
                         if (!validFiles.Contains(fileName))
                         {
                             File.Delete(file);
@@ -86,9 +88,7 @@ namespace backStage_vue3.App_Start
                         LoggerHelper.Log(LogLevel.Error, "已嘗試到最大重試次數. 任務執行失敗。");
                     }
                 }
-            }   
-
-
+            }
         }
 
         /// <summary>
@@ -120,7 +120,6 @@ namespace backStage_vue3.App_Start
                     }
                 }
             }
-
             return validFiles.ToArray();
         }
     }

@@ -16,10 +16,10 @@ namespace backStage_vue3.Filter
         public override void OnAuthorization(HttpActionContext actionContext)
         {
             var session = HttpContext.Current.Session["userSessionInfo"] as UserSessionModel;
-
             var result = new UserSessionResponseDto();
 
-            if (session == null) {
+            if (session == null)
+            {
                 result.Code = (int)StatusResCode.MissingAuthentication;
                 actionContext.Response = actionContext.Request.CreateResponse(HttpStatusCode.Unauthorized, result);
                 return;

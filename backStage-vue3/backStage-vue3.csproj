@@ -301,8 +301,10 @@
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\LoginController.cs" />
     <Compile Include="Controllers\MemberController.cs" />
+    <Compile Include="Controllers\OrderController.cs" />
     <Compile Include="Controllers\ProductController.cs" />
     <Compile Include="Controllers\UserController.cs" />
+    <Compile Include="Filter\GlobalExceptionFilter.cs" />
     <Compile Include="Filter\SessionAuthorizationFilter.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
@@ -316,10 +318,14 @@
     <Compile Include="Models\Member\UpdateLevelResponseDto.cs" />
     <Compile Include="Models\Member\UpdateStatusModel.cs" />
     <Compile Include="Models\Member\UpdateStatusResponseDto.cs" />
+    <Compile Include="Models\Order\DeleteOrderResponseDto.cs" />
     <Compile Include="Models\Order\GetOrderDetailResponseDto.cs" />
     <Compile Include="Models\Order\GetOrderResponseDto.cs" />
+    <Compile Include="Models\Order\DeleteOrderModel.cs" />
     <Compile Include="Models\Order\OrderDetailModel.cs" />
     <Compile Include="Models\Order\OrderModel.cs" />
+    <Compile Include="Models\Order\UpdateDeliveryMethodModel.cs" />
+    <Compile Include="Models\Order\UpdateDeliveryMethodResponseDto.cs" />
     <Compile Include="Models\Product\AddProductResponseDto.cs" />
     <Compile Include="Models\Product\DeleteProductModel.cs" />
     <Compile Include="Models\Product\DeleteProductResponseDto.cs" />
@@ -370,6 +376,7 @@
     <Folder Include="Views\Order\" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Configs\CustomSetting.config" />
     <None Include="packages.config" />
     <None Include="Properties\PublishProfiles\backStage-vue320240706230707 - Web Deploy.pubxml" />
   </ItemGroup>

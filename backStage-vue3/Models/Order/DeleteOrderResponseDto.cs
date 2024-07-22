@@ -1,6 +1,6 @@
-﻿namespace backStage_vue3.Models
+﻿namespace backStage_vue3.Models.Order
 {
-    public class UpdateProductResponseDto
+    public class DeleteOrderResponseDto
     {
         /// <summary>
         /// 回應狀態碼
