@@ -38,7 +38,7 @@ namespace backStage_vue3
         protected void Session_start()
         {
             Session["user"] = User.Identity.Name;
-            Session.Timeout = int.Parse(ConfigurationManager.AppSettings["Timeout"]); ;
+            Session.Timeout = int.Parse(ConfigurationManager.AppSettings["SessionTimeout"]);
         }
     }
 }

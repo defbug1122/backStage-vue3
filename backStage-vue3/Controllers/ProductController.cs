@@ -5,9 +5,7 @@ using System.Data.SqlClient;
 using System.Data;
 using System.Net;
 using System.Threading.Tasks;
-using System.Web;
 using System.Collections.Generic;
-using System.IO;
 using backStage_vue3.Utilities;
 using System.Configuration;
 
@@ -15,7 +13,7 @@ namespace backStage_vue3.Controllers
 {
     public class ProductController : BaseController
     {
-        // 限制圖片最大傳輸大小
+        // 限制圖片最大傳輸大小不能超過2MB
         private int maxFileSizeInBytes = 2 * 1024 * 1024;
 
         /// <summary>
@@ -171,32 +169,12 @@ namespace backStage_vue3.Controllers
 
             try
             {
-                imagePaths = ProcessBase64Images(new string[] { model.ImagePath1, model.ImagePath2, model.ImagePath3 }, maxFileSizeInBytes);
+                imagePaths = ProcessBase64ImageHelper.ProcessBase64Images(new string[] { model.ImagePath1, model.ImagePath2, model.ImagePath3 }, maxFileSizeInBytes);
             }
-            catch (ArgumentException ex)
+            catch (Exception)
             {
-                if (ex.Message == "InvalidFormat" || ex.Message == "InvalidBase64FormatError")
-                {
-                    result.Code = (int)StatusResCode.InvalidFormat;
-                }
-                else if (ex.Message == "ImageFormatError")
-                {
-                    result.Code = (int)StatusResCode.ImageFormatError;
-                }
-                else if (ex.Message == "ImageFileIsLarge")
-                {
-                    result.Code = (int)StatusResCode.ImageFileIsLarge;
-                }
-                else
-                {
-                    result.Code = (int)StatusResCode.Failed;
-                }
-
+                result.Code = (int)StatusResCode.ImageFormatError;
                 return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return InternalServerError(ex);
             }
 
             SqlConnection connection = null;
@@ -239,7 +217,7 @@ namespace backStage_vue3.Controllers
                 else
                 {
                     // 刪除已上傳的圖片
-                    DeleteFiles(imagePaths);
+                    DeleteFileHelper.DeleteFiles(imagePaths);
                     result.Code = (int)StatusResCode.Failed;
                     return Ok(result);
                 }
@@ -247,7 +225,7 @@ namespace backStage_vue3.Controllers
             catch (Exception ex)
             {
                 // 刪除已上傳的圖片
-                DeleteFiles(imagePaths);
+                DeleteFileHelper.DeleteFiles(imagePaths);
                 return InternalServerError(ex);
             }
             finally
@@ -300,26 +278,11 @@ namespace backStage_vue3.Controllers
 
             try
             {
-                imagePaths = ProcessBase64Images(new string[] { model.ImagePath1, model.ImagePath2, model.ImagePath3 }, maxFileSizeInBytes);
+                imagePaths = ProcessBase64ImageHelper.ProcessBase64Images(new string[] { model.ImagePath1, model.ImagePath2, model.ImagePath3 }, maxFileSizeInBytes);
             }
-            catch (ArgumentException ex)
+            catch (Exception)
             {
-                if (ex.Message == "InvalidFormat" || ex.Message == "InvalidBase64FormatError")
-                {
-                    result.Code = (int)StatusResCode.InvalidFormat;
-                }
-                else if (ex.Message == "ImageFormatError")
-                {
-                    result.Code = (int)StatusResCode.ImageFormatError;
-                }
-                else if (ex.Message == "ImageFileIsLarge")
-                {
-                    result.Code = (int)StatusResCode.ImageFileIsLarge;
-                }
-                else
-                {
-                    result.Code = (int)StatusResCode.Failed;
-                }
+                result.Code = (int)StatusResCode.ImageFormatError;
                 return Ok(result);
             }
 
@@ -364,7 +327,7 @@ namespace backStage_vue3.Controllers
                 else
                 {
                     // 刪除上上傳圖片
-                    DeleteFiles(imagePaths);
+                    DeleteFileHelper.DeleteFiles(imagePaths);
                     result.Code = (int)StatusResCode.Failed;
                     return Ok(result);
                 }
@@ -372,7 +335,7 @@ namespace backStage_vue3.Controllers
             catch (Exception ex)
             {
                 // 刪除上上傳圖片
-                DeleteFiles(imagePaths);
+                DeleteFileHelper.DeleteFiles(imagePaths);
                 return InternalServerError(ex);
             }
             finally
@@ -463,7 +426,7 @@ namespace backStage_vue3.Controllers
                     };
 
                     // 刪除圖片文件
-                    DeleteFiles(imagePaths);
+                    DeleteFileHelper.DeleteFiles(imagePaths);
                     result.Code = (int)StatusResCode.Success;
                     return Ok(result);
                 }
@@ -487,83 +450,6 @@ namespace backStage_vue3.Controllers
                 {
                     connection.Close();
                     command.Parameters.Clear();
-                }
-            }
-        }
-
-        /// <summary>
-        /// 處理商品Base64圖片
-        /// </summary>
-        /// <param name="base64Images"></param>
-        /// <returns></returns>
-        private string[] ProcessBase64Images(string[] base64Images, int maxFileSizeInBytes)
-        {
-            string[] imagePaths = new string[base64Images.Length];
-
-            for (int i = 0; i < base64Images.Length; i++)
-            {
-                var base64Image = base64Images[i];
-
-                // 空字串代表不更新資料庫圖片
-                if (base64Image == "")
-                {
-                    imagePaths[i] = "";
-                }
-                else if (!string.IsNullOrEmpty(base64Image))
-                {
-                    // 分為檔案格式、base64碼
-                    var imageParts = base64Image.Split(',');
-
-                    // 驗證圖片格式、檔案大小
-                    ImageValidator.ValidateBase64Image(imageParts, maxFileSizeInBytes);
-
-                    // 檔案格式
-                    var header = imageParts[0];
-
-                    // base64碼
-                    var data = imageParts[1];
-                    var fileType = header.Split(';')[0].Split('/')[1];
-
-                    // 將base64碼 轉換成圖像
-                    var bytes = Convert.FromBase64String(data);
-                    var fileExtension = fileType;
-                    var newFileName = DateTime.Now.ToString("yyyyMMddHHmmssfff") + "_" + (i + 1) + "." + fileExtension;
-                    var uploadsDir = HttpContext.Current.Server.MapPath("~/Uploads");
-
-                    // 確保目錄存在
-                    if (!Directory.Exists(uploadsDir))
-                    {
-                        Directory.CreateDirectory(uploadsDir);
-                    }
-
-                    var filePath = Path.Combine(uploadsDir, newFileName);
-
-                    // 將圖檔寫入資料夾
-                    File.WriteAllBytes(filePath, bytes);
-                    imagePaths[i] = $"{newFileName}";
-                }
-            }
-
-            return imagePaths;
-        }
-
-
-        /// <summary>
-        /// 刪除圖片
-        /// </summary>
-        /// <param name="filePaths"></param>
-        private static void DeleteFiles(string[] filePaths)
-        {
-            foreach (var path in filePaths)
-            {
-                if (!string.IsNullOrEmpty(path))
-                {
-                    var filePath = Path.Combine(HttpContext.Current.Server.MapPath("~/Uploads"), path);
-
-                    if (File.Exists(filePath))
-                    {
-                        File.Delete(filePath);
-                    }
                 }
             }
         }

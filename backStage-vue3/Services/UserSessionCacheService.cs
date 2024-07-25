@@ -28,7 +28,7 @@ namespace backStage_vue3.Services
         {
             var cacheItemPolicy = new CacheItemPolicy
             {
-                SlidingExpiration = TimeSpan.FromMinutes(int.Parse(ConfigurationManager.AppSettings["Timeout"])) // 設置緩存時間，20分鐘沒有活動會過期
+                SlidingExpiration = TimeSpan.FromMinutes(int.Parse(ConfigurationManager.AppSettings["SessionTimeout"])) // 設置緩存時間，20分鐘沒有活動會過期
             };
 
             // 進入lock 區塊，會去檢查此 key 是否被佔用，如果被佔用，就要排隊等待
@@ -85,7 +85,7 @@ namespace backStage_vue3.Services
 
                     UserSessionCache.Set(updatedSession.Id.ToString(), updatedSession, new CacheItemPolicy
                     {
-                        SlidingExpiration = TimeSpan.FromMinutes(int.Parse(ConfigurationManager.AppSettings["Timeout"])) // 設置緩存時間，20分鐘沒有活動會過期
+                        SlidingExpiration = TimeSpan.FromMinutes(int.Parse(ConfigurationManager.AppSettings["SessionTimeout"])) // 設置緩存時間，20分鐘沒有活動會過期
                     });
                 }
             }

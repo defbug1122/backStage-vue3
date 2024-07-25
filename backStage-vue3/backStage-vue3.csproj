@@ -310,6 +310,9 @@
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
     <Compile Include="Models\Enum\LogLevelModel.cs" />
+    <Compile Include="Models\Enum\OrderDeliveryStatusModel.cs" />
+    <Compile Include="Models\Enum\OrderReturnStatusModel.cs" />
+    <Compile Include="Models\Enum\OrderStatusModel.cs" />
     <Compile Include="Models\Enum\PermissionModel.cs" />
     <Compile Include="Models\Member\GetMemberResponseDto.cs" />
     <Compile Include="Models\Member\MemberModel.cs" />
@@ -326,6 +329,10 @@
     <Compile Include="Models\Order\OrderModel.cs" />
     <Compile Include="Models\Order\UpdateDeliveryMethodModel.cs" />
     <Compile Include="Models\Order\UpdateDeliveryMethodResponseDto.cs" />
+    <Compile Include="Models\Order\UpdateDeliveryStatusModel.cs" />
+    <Compile Include="Models\Order\UpdateDeliveryStatusResponseDto.cs" />
+    <Compile Include="Models\Order\UpdateOrderStatusModel.cs" />
+    <Compile Include="Models\Order\UpdateOrderStatusResponseDto.cs" />
     <Compile Include="Models\Product\AddProductResponseDto.cs" />
     <Compile Include="Models\Product\DeleteProductModel.cs" />
     <Compile Include="Models\Product\DeleteProductResponseDto.cs" />
@@ -351,9 +358,11 @@
     <Compile Include="Models\User\UserSessionResponseDto.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\UserSessionCacheService.cs" />
+    <Compile Include="Utilities\DeleteFileHelper.cs" />
     <Compile Include="Utilities\ImageValidatorHelper.cs" />
     <Compile Include="Utilities\HashHelper.cs" />
     <Compile Include="Utilities\LoggerHelper.cs" />
+    <Compile Include="Utilities\ProcessBase64ImageHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="favicon.ico" />

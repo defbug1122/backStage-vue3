@@ -17,7 +17,7 @@ namespace backStage_vue3.Utilities
             // 確保Base 64 被分割為兩個部分(標頭、Base 64 數據)
             if (imageParts.Length != 2)
             {
-                throw new ArgumentException("InvalidFormat");
+                throw new Exception();
             }
 
             var header = imageParts[0];
@@ -27,14 +27,14 @@ namespace backStage_vue3.Utilities
             // 驗證是否為Base 64碼
             if (!IsBase64String(data))
             {
-                throw new ArgumentException("InvalidBase64FormatError");
+                throw new Exception();
             }
 
 
             // 驗證圖片格式
             if (fileType != "jpg" && fileType != "jpeg" && fileType != "png")
             {
-                throw new ArgumentException("ImageFormatError");
+                throw new Exception();
             }
 
             var bytes = Convert.FromBase64String(data);
@@ -42,7 +42,7 @@ namespace backStage_vue3.Utilities
             // 圖片檔案大小限制
             if (bytes.Length > maxFileSizeInBytes)
             {
-                throw new ArgumentException("ImageFileIsLarge");
+                throw new Exception();
             }
         }
 

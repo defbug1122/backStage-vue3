@@ -39,6 +39,11 @@
         /// 訂單資訊-訂單狀態
         /// </summary>
         public byte OrderStatus { get; set; }
+
+        /// <summary>
+        /// 訂單資訊-配送狀態
+        /// </summary>
+        public byte DeliveryStatus { get; set; }
     }
 
     /// <summary>

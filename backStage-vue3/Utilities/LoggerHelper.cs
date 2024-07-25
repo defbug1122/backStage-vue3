@@ -2,7 +2,6 @@
 using System;
 using System.IO;
 
-
 namespace backStage_vue3.Utilities
 {
     /// <summary>

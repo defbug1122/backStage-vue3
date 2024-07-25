@@ -105,7 +105,7 @@ export default {
   methods: {
     // 查詢功能
     HandleSearch() {
-      if (this.localSearchTerm.length < 16) {
+      if (this.localSearchTerm.length < 18) {
         this.$emit("search", this.localSearchTerm, 1, this.localSortBy);
       } else {
         this.$message({

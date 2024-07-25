@@ -21,6 +21,7 @@
           <td>{{ item.receiver }}</td>
           <td>{{ item.orderAmount }}</td>
           <td>{{ GetOrderStatus(item.orderStatus) }}</td>
+          <td>{{ GetDeliveryStatus(item.deliveryStatus) }}</td>
           <td>
             <el-button plain @click="OpenOrderDetail(item.orderId)">
               查看詳情
@@ -79,15 +80,16 @@ export default {
       sortOptions: [
         { label: "按訂單編號排序", value: 1 },
         { label: "按訂單日期排序", value: 2 },
-        { label: "按配送日期排序", value: 3 },
+        { label: "按配送狀態排序", value: 3 },
       ],
       tableTitle: [
         "訂單號碼",
         "訂單日期",
-        "訂購會員名稱",
+        "訂購會員帳號",
         "收件人",
         "訂單金額",
         "訂單狀態",
+        "配送狀態",
         "操作",
       ],
       popoversVisible: {},
@@ -106,6 +108,18 @@ export default {
         6: "自取-未取貨",
         7: "退貨處理中",
         8: "退貨完成",
+      },
+      deliveryStatusMap: {
+        1: "備貨中",
+        2: "已發貨",
+        3: "已送達",
+        4: "配送失敗",
+        5: "回收退貨中",
+        6: "已收到退貨",
+        7: "店鋪準備商品中",
+        8: "待取貨",
+        9: "已取貨",
+        10: "未取貨",
       },
     };
   },
@@ -158,14 +172,22 @@ export default {
     CloseDetailModal() {
       this.showDetailModal = false;
       this.currentOrderId = null;
+      this.FetchOrders(
+        this.searchTerm,
+        this.pageNumber,
+        this.sortOptions[0].value
+      );
     },
     GetOrderStatus(status) {
       return this.orderStatusMap[status] || "未知狀態";
     },
+    GetDeliveryStatus(status) {
+      return this.deliveryStatusMap[status] || "未知狀態";
+    },
     async DeleteOrder(id) {
-      console.log(999999999, id);
       try {
         const response = await DeleteOrder({ orderId: id });
+
         if (response.data.code === 0) {
           this.$message({
             message: "訂單刪除成功",

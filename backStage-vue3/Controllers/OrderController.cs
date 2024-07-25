@@ -30,8 +30,8 @@ namespace backStage_vue3.Controllers
                 return Ok(result);
             }
 
-            // 檢查相關參數的有效性
-            if (model.PageNumber <= 0 || model.PageSize != 10)
+            // 關鍵字搜尋不能超過17個字、頁數必須大於1、筆數只能查詢剛好10筆
+            if ((model.SearchTerm != null && model.SearchTerm.Length > 17) || model.PageNumber <= 0 || model.PageSize != 10 || (model.SortBy >3 || model.SortBy < 0))
             {
                 result.Code = (int)StatusResCode.InvalidFormat;
                 return Ok(result);
@@ -60,28 +60,22 @@ namespace backStage_vue3.Controllers
                 command.Parameters.AddWithValue("@pageNumber", model.PageNumber);
                 command.Parameters.AddWithValue("@pageSize", model.PageSize);
                 command.Parameters.AddWithValue("@sortBy", model.SortBy);
-
                 SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
                 {
                     Direction = ParameterDirection.Output
                 };
-
                 command.Parameters.Add(statusCodeParam);
-
                 await command.ExecuteNonQueryAsync();
-
                 int statusCode = (int)statusCodeParam.Value;
+                reader = await command.ExecuteReaderAsync();
+                List<OrderModel> orders = new List<OrderModel>();
+                int totalRecords = 0;
 
                 if (statusCode != (int)StatusResCode.Success)
                 {
-                    return StatusCode(HttpStatusCode.Unauthorized);
+                    result.Code = (int)StatusResCode.Failed;
+                    return Ok(result);
                 }
-
-                reader = await command.ExecuteReaderAsync();
-
-                List<OrderModel> orders = new List<OrderModel>();
-
-                int totalRecords = 0;
 
                 while (await reader.ReadAsync())
                 {
@@ -93,7 +87,8 @@ namespace backStage_vue3.Controllers
                         MemberName = reader["MemberName"].ToString(),
                         Receiver = reader["Receiver"].ToString(),
                         OrderAmount = Convert.ToDecimal(reader["OrderAmount"]),
-                        OrderStatus = Convert.ToByte(reader["OrderStatus"])
+                        OrderStatus = Convert.ToByte(reader["OrderStatus"]),
+                        DeliveryStatus = Convert.ToByte(reader["DeliveryStatus"])
                     };
                     orders.Add(order);
                     totalRecords = Convert.ToInt32(reader["TotalRecords"]);
@@ -140,6 +135,13 @@ namespace backStage_vue3.Controllers
                 return Ok(result);
             }
 
+            bool checkPermission = (UserSession.Permission & (int)Permissions.ViewOrder) == (int)Permissions.ViewOrder;
+
+            if (!checkPermission)
+            {
+                return StatusCode(HttpStatusCode.Forbidden);
+            }
+
             SqlConnection connection = null;
             SqlCommand command = null;
             SqlDataReader reader = null;
@@ -159,7 +161,6 @@ namespace backStage_vue3.Controllers
                 };
                 command.Parameters.Add(statusCodeParam);
                 reader = await command.ExecuteReaderAsync();
-
                 OrderDetailResponse order = null;
 
                 // 讀取訂單基本訊息
@@ -202,7 +203,6 @@ namespace backStage_vue3.Controllers
                 }
 
                 reader.Close();
-
                 int statusCode = (int)statusCodeParam.Value;
 
                 if (statusCode != (int)StatusResCode.Success)
@@ -232,12 +232,24 @@ namespace backStage_vue3.Controllers
             }
         }
 
-        [HttpPost, Route("api/orders/updateDeliveryMethod")]
-        public async Task<IHttpActionResult> UpdateDeliveryMethod(UpdateDeliveryMethodModel model)
+        /// <summary>
+        /// 更新訂單狀態
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
+        [HttpPost, Route("api/orders/updateOrderStatus")]
+        public async Task<IHttpActionResult> UpdateOrderStatus(UpdateOrderStatusModel model)
         {
-            var result = new UpdateDeliveryMethodResponseDto();
+            var result = new UpdateOrderStatusResponseDto();
 
-            if (model.OrderId == 0 || model.DeliveryMethod < 1 || model.DeliveryMethod > 2)
+            bool checkPermission = (UserSession.Permission & (int)Permissions.EditOrder) == (int)Permissions.EditOrder;
+
+            if (!checkPermission)
+            {
+                return StatusCode(HttpStatusCode.Forbidden);
+            }
+
+            if (model.OrderId == 0 || model.OrderStatus == 0)
             {
                 result.Code = (int)StatusResCode.InvalidFormat;
                 return Ok(result);
@@ -250,20 +262,18 @@ namespace backStage_vue3.Controllers
             {
                 connection = new SqlConnection(SqlConfig.conStr);
                 await connection.OpenAsync();
-                command = new SqlCommand("pro_bs_editDeliveryMethod", connection)
+                command = new SqlCommand("pro_bs_editOrderStatus", connection)
                 {
                     CommandType = CommandType.StoredProcedure
                 };
                 command.Parameters.AddWithValue("@orderId", model.OrderId);
-                command.Parameters.AddWithValue("@deliveryMethod", model.DeliveryMethod);
-                command.Parameters.AddWithValue("@deliveryAddress", model.DeliveryAddress);
+                command.Parameters.AddWithValue("@orderStatus", model.OrderStatus);
                 SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
                 {
                     Direction = ParameterDirection.Output
                 };
                 command.Parameters.Add(statusCodeParam);
                 await command.ExecuteNonQueryAsync();
-
                 int statusCode = (int)statusCodeParam.Value;
 
                 if (statusCode != 0)
@@ -290,10 +300,170 @@ namespace backStage_vue3.Controllers
             }
         }
 
+        /// <summary>
+        /// 更新訂單配送狀態
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
+        [HttpPost, Route("api/orders/updateDeliveryStatus")]
+        public async Task<IHttpActionResult> UpdateDeliveryStatus(UpdateDeliveryStatusModel model)
+        {
+            var result = new UpdateDeliveryStatusResponseDto();
+
+            bool checkPermission = (UserSession.Permission & (int)Permissions.EditOrder) == (int)Permissions.EditOrder;
+
+            if (!checkPermission)
+            {
+                return StatusCode(HttpStatusCode.Forbidden);
+            }
+
+            if (model.OrderId == 0 || model.DeliveryStatus == 0)
+            {
+                result.Code = (int)StatusResCode.InvalidFormat;
+                return Ok(result);
+            }
+
+            SqlConnection connection = null;
+            SqlCommand command = null;
+
+            try
+            {
+                connection = new SqlConnection(SqlConfig.conStr);
+                await connection.OpenAsync();
+                command = new SqlCommand("pro_bs_editDeliveryStatus", connection)
+                {
+                    CommandType = CommandType.StoredProcedure
+                };
+                command.Parameters.AddWithValue("@orderId", model.OrderId);
+                command.Parameters.AddWithValue("@deliveryStatus", model.DeliveryStatus);
+                SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
+                {
+                    Direction = ParameterDirection.Output
+                };
+                command.Parameters.Add(statusCodeParam);
+                await command.ExecuteNonQueryAsync();
+                int statusCode = (int)statusCodeParam.Value;
+
+                if (statusCode != 0)
+                {
+                    result.Code = (int)StatusResCode.Failed;
+                    return Ok(result);
+                }
+                else
+                {
+                    result.Code = (int)StatusResCode.Success;
+                    return Ok(result);
+                }
+            }
+            catch (Exception ex)
+            {
+                return InternalServerError(ex);
+            }
+            finally
+            {
+                if (connection != null)
+                {
+                    connection.Close();
+                }
+            }
+        }
+
+        /// <summary>
+        /// 更新訂單配送訊息
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
+        [HttpPost, Route("api/orders/updateDeliveryMethod")]
+        public async Task<IHttpActionResult> UpdateDeliveryMethod(UpdateDeliveryMethodModel model)
+        {
+            string mobilePattern = @"^09\d{8}$";
+            string addresspPattern = @"^[\u4e00-\u9fa5]{2,3}[縣市][\u4e00-\u9fa5]{2,3}[鄉鎮市區].+$";
+            var result = new UpdateDeliveryMethodResponseDto();
+
+            bool checkPermission = (UserSession.Permission & (int)Permissions.EditOrder) == (int)Permissions.EditOrder;
+
+            if (!checkPermission)
+            {
+                return StatusCode(HttpStatusCode.Forbidden);
+            }
+
+            if (model.OrderId == 0 ||  model.DeliveryMethod == 0)
+            {
+                result.Code = (int)StatusResCode.InvalidFormat;
+                return Ok(result);
+            }
+
+            if (!System.Text.RegularExpressions.Regex.IsMatch(model.MobileNumber,mobilePattern) ||
+                !System.Text.RegularExpressions.Regex.IsMatch(model.DeliveryAddress, addresspPattern))
+            {
+                result.Code = (int)StatusResCode.InvalidFormat;
+                return Ok(result);
+            }
+
+            SqlConnection connection = null;
+            SqlCommand command = null;
+
+            try
+            {
+                connection = new SqlConnection(SqlConfig.conStr);
+                await connection.OpenAsync();
+                command = new SqlCommand("pro_bs_editDeliveryMethod", connection)
+                {
+                    CommandType = CommandType.StoredProcedure
+                };
+                command.Parameters.AddWithValue("@orderId", model.OrderId);
+                command.Parameters.AddWithValue("@deliveryMethod", model.DeliveryMethod);
+                command.Parameters.AddWithValue("@deliveryAddress", model.DeliveryAddress ?? ((object)DBNull.Value));
+                command.Parameters.AddWithValue("@receiver", model.Receiver);
+                command.Parameters.AddWithValue("@mobileNumber", model.MobileNumber);
+                SqlParameter statusCodeParam = new SqlParameter("@statusCode", SqlDbType.Int)
+                {
+                    Direction = ParameterDirection.Output
+                };
+                command.Parameters.Add(statusCodeParam);
+                await command.ExecuteNonQueryAsync();
+                int statusCode = (int)statusCodeParam.Value;
+
+                if (statusCode != 0)
+                {
+                    result.Code = (int)StatusResCode.Failed;
+                    return Ok(result);
+                }
+                else
+                {
+                    result.Code = (int)StatusResCode.Success;
+                    return Ok(result);
+                }
+            }
+            catch (Exception ex)
+            {
+                return InternalServerError(ex);
+            }
+            finally
+            {
+                if (connection != null)
+                {
+                    connection.Close();
+                }
+            }
+        }
+
+        /// <summary>
+        /// 刪除訂單
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
         [HttpPost, Route("api/orders/delete")]
         public async Task<IHttpActionResult> DeleteOrder(DeleteOrderModel model)
         {
             var result = new DeleteOrderResponseDto();
+
+            bool checkPermission = (UserSession.Permission & (int)Permissions.DeleteOrder) == (int)Permissions.DeleteOrder;
+
+            if (!checkPermission)
+            {
+                return StatusCode(HttpStatusCode.Forbidden);
+            }
 
             if (model.OrderId == 0)
             {

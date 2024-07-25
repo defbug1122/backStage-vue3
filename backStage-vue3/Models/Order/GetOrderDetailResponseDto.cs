@@ -3,7 +3,7 @@
 namespace backStage_vue3.Models
 {
     /// <summary>
-    /// 訂單明細回應
+    /// 訂單明細請求回應
     /// </summary>
     public class GetOrderDetailResponseDto
     {

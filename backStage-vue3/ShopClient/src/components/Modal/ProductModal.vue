@@ -11,10 +11,10 @@
     <div>
       <el-form :model="product">
         <el-form-item label="商品名稱">
-          <el-input maxlength="20" v-model="product.name"></el-input>
+          <el-input maxlength="20" v-model.trim="product.name"></el-input>
         </el-form-item>
         <el-form-item label="商品描述">
-          <el-input maxlength="50" v-model="product.describe"></el-input>
+          <el-input maxlength="50" v-model.trim="product.describe"></el-input>
         </el-form-item>
         <div class="upload-container">
           <el-form-item label="封面圖片">

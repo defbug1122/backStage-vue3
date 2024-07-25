@@ -95,3 +95,11 @@ export function UpdateDeliveryMethod(params) {
 export function DeleteOrder(params) {
   return https.post("/api/orders/delete", params);
 }
+
+export function UpdateOrderStatus(params) {
+  return https.post("/api/orders/updateOrderStatus", params);
+}
+
+export function UpdateDeliveryStatus(params) {
+  return https.post("/api/orders/updateDeliveryStatus", params);
+}

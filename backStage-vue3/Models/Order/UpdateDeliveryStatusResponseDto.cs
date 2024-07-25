@@ -1,9 +1,10 @@
-﻿namespace backStage_vue3.Models.Order
+﻿
+namespace backStage_vue3.Models
 {
     /// <summary>
-    /// 更新訂單配送資訊 POST 請求回應
+    /// 更新訂單配送狀態 PSOT 請求回應 
     /// </summary>
-    public class UpdateDeliveryMethodResponseDto
+    public class UpdateDeliveryStatusResponseDto
     {
         /// <summary>
         /// 回應狀態碼

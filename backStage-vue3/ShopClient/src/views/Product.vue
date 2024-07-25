@@ -20,7 +20,6 @@
           <td>{{ item.name }}</td>
           <td>
             <img
-              @error="SetPlaceholder($event)"
               :src="GetImageUrl(item.imagePath1)"
               alt="product image"
               width="100"
@@ -33,7 +32,7 @@
           <td>{{ item.active ? "是" : "否" }}</td>
           <td class="stock">
             <i v-if="item.stock < safetyStock" class="el-icon-warning"> </i>
-            <span class="tips">安全庫存量建議大於5</span>
+            <span class="tips">安全庫存量建議大於{{ safetyStock }}</span>
             {{ item.stock }}
           </td>
           <td>
@@ -218,6 +217,7 @@ export default {
     },
     OpenEditModal(product) {
       this.isEditMode = true;
+      this.initialProduct = JSON.parse(JSON.stringify(product)); // 保存初始状态
       this.currentProduct = {
         ...product,
         images: [
@@ -232,6 +232,30 @@ export default {
       this.showAddModal = false;
     },
     async SaveProduct(product) {
+      // 比较 initialProduct 和 currentProduct
+      const initialProduct = { ...this.initialProduct };
+      const currentProduct = { ...product };
+      delete currentProduct.images;
+      const initialProductStr = JSON.stringify({
+        ...initialProduct,
+        imagePath1: initialProduct.imagePath1 === "" ? null : "",
+        imagePath2: initialProduct.imagePath2 === "" ? null : "",
+        imagePath3: initialProduct.imagePath3 === "" ? null : "",
+      });
+      const currentProductStr = JSON.stringify({
+        ...currentProduct,
+      });
+
+      if (initialProductStr === currentProductStr) {
+        this.$message({
+          message: "沒有修改任何內容。",
+          type: "info",
+          duration: 1200,
+        });
+        this.showAddModal = false;
+        return;
+      }
+
       // 編輯商品
       if (this.isEditMode) {
         const response = await EditProduct({
